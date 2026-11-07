@@ -1,0 +1,39 @@
+#menuRoot {
+    -fx-background-color: linear-gradient(from 10% 0% to 85% 100%, #201b40 0%, #281631 53%, #57192f 100%);
+    -fx-font-family: "Segoe UI";
+}
+.menu-title {
+    -fx-font-family: "Segoe UI Light";
+    -fx-font-size: 84px;
+    -fx-font-style: italic;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ff455a;
+    -fx-padding: 0;
+}
+.menu-subtitle { -fx-font-size: 13px; -fx-text-fill: #ff455a; }
+.menu-button {
+    -fx-min-width: 190px; -fx-pref-width: 190px;
+    -fx-min-height: 48px; -fx-pref-height: 48px;
+    -fx-background-color: #ff455a;
+    -fx-background-radius: 30px;
+    -fx-text-fill: #fff4f5;
+    -fx-font-size: 16px;
+    -fx-cursor: hand;
+    -fx-padding: 8px 24px;
+}
+.menu-button:hover { -fx-background-color: #ff6172; -fx-effect: dropshadow(gaussian, #ff455a44, 18, 0.15, 0, 3); }
+.menu-button:pressed { -fx-background-color: #df304c; -fx-translate-y: 1px; }
+.menu-button:focused { -fx-border-color: #ffabb5; -fx-border-radius: 30px; -fx-border-width: 2px; }
+.menu-hint { -fx-font-size: 10px; -fx-text-fill: #c88b9d; }
+.settings-title { -fx-font-size: 38px; -fx-font-weight: bold; -fx-text-fill: #ff455a; }
+.settings-caption { -fx-font-size: 12px; -fx-text-fill: #c8a6bb; }
+.field-label { -fx-font-size: 11px; -fx-text-fill: #ff7182; }
+.check-box { -fx-text-fill: #fff0f4; -fx-font-size: 14px; -fx-padding: 10px 0; }
+.check-box .box { -fx-background-color: #49304f; -fx-border-color: #b05b78; -fx-border-radius: 3px; }
+.check-box:selected .mark { -fx-background-color: #ff455a; }
+.combo-box { -fx-background-color: #49304f; -fx-background-radius: 8px; -fx-padding: 5px; }
+.combo-box .list-cell { -fx-text-fill: #fff0f4; -fx-font-size: 14px; }
+.combo-box-popup .list-view { -fx-background-color: #34223f; }
+.combo-box-popup .list-cell { -fx-background-color: #34223f; }
+.combo-box-popup .list-cell:hover, .combo-box-popup .list-cell:selected { -fx-background-color: #80374f; }
+.combo-box .arrow { -fx-background-color: #ff7182; }

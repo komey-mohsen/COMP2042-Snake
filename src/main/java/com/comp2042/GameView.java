@@ -38,9 +38,9 @@ public class GameView {
 
     public void makeScene(Scene scene, Snake snek, Coin coin) {
         Scene gameScene = scene;
-        gridCanvas = new Canvas(gameScene.getWidth(), gameScene.getHeight());
-        initX = scene.getWidth();
-        initY = scene.getHeight();
+        gridCanvas = new Canvas(game.getWidth() * game.getMultiplier(), game.getHeight() * game.getMultiplier());
+        initX = gridCanvas.getWidth();
+        initY = gridCanvas.getHeight();
         gc = gridCanvas.getGraphicsContext2D();
         drawGrid(coin, snek, gc);
 
@@ -171,6 +171,10 @@ public class GameView {
         }
 
         gc.drawImage(rotatedImage, (point.x * game.getMultiplier()) * fullScale, (point.y * game.getMultiplier()) * fullScale, game.getMultiplier() * fullScale * fullScale, game.getMultiplier() * fullScale * fullScale);
+    }
+
+    public void resetTurns() {
+        turnArray = new int[game.getWidth()][game.getHeight()];
     }
 
     public void turnDir(Snake snek) {

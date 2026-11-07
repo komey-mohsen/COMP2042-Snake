@@ -60,6 +60,7 @@ public class Game {
     public void resetScore() {
         score = 0;
         scorePoints = 0;
+        maxScore = width * height - 2;
     }
 
     public Color getColor() {

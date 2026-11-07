@@ -41,6 +41,8 @@ public class GameController {
         this.stage = stage;
 
         this.obstacle = obstacle;
+        key = KeyCode.LEFT;
+        lastKey = KeyCode.LEFT;
         animation.setCycleCount(Animation.INDEFINITE);
         animation.setRate(game.getSpeed());
     }
@@ -96,9 +98,9 @@ public class GameController {
             animation.stop();
         }
 
-        if (event.getCode().equals(KeyCode.TAB)) {
-            reset();
-            gameView.scoreLabel.setText("Score: " + game.getScorePoints());
+        if (event.getCode().equals(KeyCode.TAB) || event.getCode().equals(KeyCode.R)) {
+            restart();
+            event.consume();
         }
 
         if (event.getCode().equals(KeyCode.PLUS)) {
@@ -116,6 +118,7 @@ public class GameController {
         }
 
         if (event.getCode().equals(KeyCode.ESCAPE)) {
+            animation.stop();
             MainMenuController mainMenuController = new MainMenuController();
             mainMenuController.getViewManager().getPrimaryStage().show();
             mainMenuController.getViewManager().getGameStage().close();
@@ -133,21 +136,21 @@ public class GameController {
         }
     }
 
-    private void reset() {
+    public void restart() {
 
-        animation.jumpTo(Duration.ZERO);
         animation.stop();
+        animation.jumpTo(Duration.ZERO);
 
+        obstacle.reset();
+        game.resetScore();
         snek = new Snake(game.getWidth(), game.getHeight(), game.isNoBorder(), obstacle);
         coin = new Coin(game.getWidth(), game.getHeight(), snek, obstacle);
 
-        int unusedObstacleCount = new Random().nextInt(game.getWidth() * game.getHeight() / 20) + 3;
-
         animation.setRate(game.getSpeed());
         key = KeyCode.LEFT;
+        lastKey = KeyCode.LEFT;
         keyPressed = false;
-        game.resetScore();
-        obstacle.reset();
+        gameView.resetTurns();
 
         gameView.gameWon();
         gameView.gameOver(snek);
