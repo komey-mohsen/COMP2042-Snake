@@ -38,7 +38,7 @@ public class Game {
     }
 
     public boolean gameWon() {
-        return score == maxScore;
+        return score >= maxScore;
     }
 
     public void incScore() {
@@ -46,7 +46,8 @@ public class Game {
     }
 
     public void decMaxScore(int num) {
-        this.maxScore -= (num - 1);
+        if (num < 0) throw new IllegalArgumentException("Obstacle count cannot be negative");
+        this.maxScore = Math.max(0, maxScore - num);
     }
 
     public int getWidth() {
