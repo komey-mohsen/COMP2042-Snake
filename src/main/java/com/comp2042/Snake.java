@@ -4,6 +4,7 @@ import javafx.scene.paint.Color;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Snake {
     private Color headColor = Color.web("2eb872");
@@ -11,6 +12,7 @@ public class Snake {
     private boolean dead = false;
     private final Point head = new Point();
     private final ArrayList<Point> body = new ArrayList<>();
+    private final ArrayList<Integer> bodyDirections = new ArrayList<>();
     private final int gx;
     private final int gy;
     private boolean ignoreBorders = false;
@@ -24,6 +26,7 @@ public class Snake {
         this.noBorder = noBorder;
         this.head.setLocation(x / 2, y / 2);
         this.body.add(new Point(x / 2 + 1, y / 2));
+        this.bodyDirections.add(270);
         this.gx = x;
         this.gy = y;
     }
@@ -50,6 +53,8 @@ public class Snake {
             dead = true;
             return false;
         }
+        // Wrapping along a one-cell axis does not advance into another cell.
+        if (destination.equals(head)) return false;
 
         boolean grows = destination.equals(food);
         // A tail cell is free only if it moves away on this non-growing tick.
@@ -59,8 +64,12 @@ public class Snake {
             dead = true;
             return false;
         }
-        if (!grows) body.remove(0);
+        if (!grows) {
+            body.remove(0);
+            bodyDirections.remove(0);
+        }
         body.add(new Point(head));
+        bodyDirections.add(rotation);
         head.setLocation(destination);
         snakeDir = rotation;
         return grows;
@@ -78,6 +87,11 @@ public class Snake {
 
     public Point getHead() {
         return new Point(head);
+    }
+
+    /** Keeps actual link direction when two wrapped routes have the same coordinates. */
+    public List<Integer> getBodyDirections() {
+        return List.copyOf(bodyDirections);
     }
 
     public Color getHeadColor() {

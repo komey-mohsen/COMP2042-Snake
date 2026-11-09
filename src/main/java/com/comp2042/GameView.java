@@ -102,7 +102,7 @@ public class GameView {
         }
 
         for (SnakeSprites.Part part : SnakeSprites.layout(snek.getBody(), snek.getHead(),
-                snek.getSnakeDir(), game.getWidth(), game.getHeight())) {
+                snek.getSnakeDir(), snek.getBodyDirections())) {
             drawPart(part);
         }
 

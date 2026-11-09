@@ -9,6 +9,18 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SnakeSpritesTest {
+    @Test
+    void twoRowWrappingUsesActualTravelDirectionForTailAndCorner() {
+        Snake snake = new Snake(6, 2, true, new Obstacle(6, 2));
+        snake.move('D', null);
+        var parts = SnakeSprites.layout(snake.getBody(), snake.getHead(), snake.getSnakeDir(), snake.getBodyDirections());
+        assertEquals(180, parts.get(0).rotation(), "The tail must connect downward through the wrapped edge");
+        snake.move('R', new Point(4, 0));
+        parts = SnakeSprites.layout(snake.getBody(), snake.getHead(), snake.getSnakeDir(), snake.getBodyDirections());
+        assertEquals(SnakeSprites.Kind.CORNER, parts.get(1).kind());
+        assertEquals(180, parts.get(1).rotation(), "The corner joins its upward tail-side link to its right head-side link");
+    }
+
     @ParameterizedTest
     @CsvSource({"1,2,2,3,0", "1,2,2,1,90", "2,1,3,2,180", "3,2,2,3,270"})
     void cornersFollowTheirTwoNeighbours(int tailX, int tailY, int headX, int headY, int rotation) {

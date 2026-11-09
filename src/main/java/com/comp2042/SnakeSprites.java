@@ -20,15 +20,25 @@ public final class SnakeSprites {
 
     /** Plans one linear pass over the tail-first body plus the head. */
     public static List<Part> layout(List<Point> body, Point head, int heading, int width, int height) {
+        List<Integer> links = new ArrayList<>(body.size());
+        for (int index = 0; index < body.size(); index++) {
+            Point next = index + 1 < body.size() ? body.get(index + 1) : head;
+            links.add(direction(body.get(index), next, width, height));
+        }
+        return layout(body, head, heading, links);
+    }
+
+    /** Uses recorded link directions on narrow boards where coordinates alone are ambiguous. */
+    public static List<Part> layout(List<Point> body, Point head, int heading, List<Integer> links) {
+        if (links.size() != body.size()) throw new IllegalArgumentException("Each body cell needs one direction");
         List<Part> parts = new ArrayList<>(body.size() + 1);
         for (int index = 0; index < body.size(); index++) {
             Point current = body.get(index);
-            Point next = index + 1 < body.size() ? body.get(index + 1) : head;
-            int towardHead = direction(current, next, width, height);
+            int towardHead = links.get(index);
             if (index == 0) {
                 parts.add(new Part(Kind.TAIL, towardHead, current.x, current.y));
             } else {
-                int towardTail = direction(current, body.get(index - 1), width, height);
+                int towardTail = (links.get(index - 1) + 180) % 360;
                 if (Math.floorMod(towardHead - towardTail, 360) == 180) {
                     parts.add(new Part(Kind.BODY, towardHead % 180, current.x, current.y));
                 } else {
