@@ -60,12 +60,81 @@ public class GameUiSmokeCheck {
     static void key(Scene scene, KeyCode code) {
         scene.getOnKeyPressed().handle(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false));
     }
+
+    static void setCoin(GameController controller, Coin coin, Point position) throws Exception {
+        Field location = Coin.class.getDeclaredField("pos"); location.setAccessible(true); location.set(coin, position);
+        Field current = GameController.class.getDeclaredField("coin"); current.setAccessible(true); current.set(controller, coin);
+    }
+
+    static void tick(GameController controller) throws Exception {
+        var tick = GameController.class.getDeclaredMethod("tick"); tick.setAccessible(true); tick.invoke(controller);
+    }
+
+    static GameController round(Game game) throws Exception {
+        Obstacle obstacles = new Obstacle(game.getWidth(), game.getHeight());
+        Snake snake = new Snake(game.getWidth(), game.getHeight(), game.isNoBorder(), obstacles);
+        Coin coin = new Coin(game.getWidth(), game.getHeight(), snake, obstacles);
+        GameView view = new GameView(game);
+        view.makeScene(snake, coin);
+        return new GameController(snake, coin, game, view, obstacles, new Stage());
+    }
+
+    static void checkRoundCompletion() throws Exception {
+        Game game = new Game(3, 1, false, 'N');
+        GameController controller = round(game);
+        GameView view = (GameView) field(controller, "gameView");
+        Scene scene = new Scene(new StackPane(view.gridCanvas)); scene.setOnKeyPressed(controller::handle);
+        try {
+            key(scene, KeyCode.LEFT); tick(controller);
+            Timeline clock = (Timeline) field(controller, "animation");
+            check(game.gameWon() && game.getScorePoints() == 5, "Final collection must win and score immediately");
+            check(view.gameWonLabel.isVisible(), "Win label is missing");
+            check(field(controller, "coin") == null, "Won board must not spawn another coin");
+            check(clock.getStatus() == Animation.Status.STOPPED, "Winning must stop the clock");
+            key(scene, KeyCode.KP_UP);
+            check(clock.getStatus() == Animation.Status.STOPPED, "Won game resumed from input");
+            controller.restart();
+            check(!game.gameWon() && game.getScorePoints() == 0 && !view.gameWonLabel.isVisible(), "Won game did not restart cleanly");
+        } finally { controller.close(); }
+    }
+
+    static void checkPowerUpExpiryAndSmallBoardSilver() throws Exception {
+        Game game = new Game(5, 2, true, 'N');
+        GameController controller = round(game);
+        Scene scene = new Scene(new StackPane(((GameView) field(controller, "gameView")).gridCanvas));
+        scene.setOnKeyPressed(controller::handle);
+        try {
+            Snake snake = (Snake) field(controller, "snek"); Obstacle obstacles = (Obstacle) field(controller, "obstacle");
+            setCoin(controller, new BlueCoin(5, 2, snake, obstacles), new Point(1, 1));
+            key(scene, KeyCode.LEFT); tick(controller);
+            setCoin(controller, new Coin(5, 2, snake, obstacles), new Point(0, 1)); tick(controller); tick(controller);
+            check(snake.getDead(), "Blue wrapping did not expire on the next ordinary coin");
+            controller.restart();
+            snake = (Snake) field(controller, "snek");
+            setCoin(controller, new RainbowCoin(5, 2, snake, obstacles), new Point(1, 1));
+            key(scene, KeyCode.LEFT); tick(controller);
+            Timeline clock = (Timeline) field(controller, "animation");
+            check(clock.getRate() == game.getSpeed() + 5, "Rainbow did not increase speed");
+            setCoin(controller, new Coin(5, 2, snake, obstacles), new Point(0, 1)); tick(controller);
+            check(clock.getRate() == game.getSpeed(), "Rainbow speed did not expire on the next coin");
+            controller.restart();
+            snake = (Snake) field(controller, "snek");
+            setCoin(controller, new SilverCoin(5, 2, snake, obstacles), new Point(1, 1));
+            key(scene, KeyCode.LEFT); tick(controller);
+            check(game.getScorePoints() == 5 && !obstacles.getObstacles().isEmpty(), "Silver failed on a small supported board");
+            check(BoardCells.allFreeCellsConnected(5, 2, obstacles.getObstacles(), snake.getHead()), "Silver disconnected the board");
+            controller.restart();
+            check(obstacles.getObstacles().isEmpty() && clock.getRate() == game.getSpeed(), "Restart retained power-up state");
+        } finally { controller.close(); }
+    }
     static void play(ViewManager views) {
         Button play = (Button) views.getPrimaryStage().getScene().getRoot().lookupAll(".button").stream()
             .filter(n -> n instanceof Button b && b.getText().equals("Play")).findFirst().orElseThrow();
         play.fire();
     }
     static void runChecks() throws Exception {
+        checkRoundCompletion();
+        checkPowerUpExpiryAndSmallBoardSilver();
         new Main().start(new Stage());
         ViewManager views = Main.getViewManager();
         play(views);
@@ -81,7 +150,7 @@ public class GameUiSmokeCheck {
         check(view.gridCanvas.getWidth() <= area.getWidth(), "Board is clipped horizontally");
         check(view.gridCanvas.getHeight() <= area.getHeight(), "Board overlaps help footer");
         checkRendering(view);
-        key(scene, KeyCode.UP);
+        key(scene, KeyCode.KP_UP);
         check(clock.getStatus() == Animation.Status.RUNNING, "Arrow did not start clock");
         key(scene, KeyCode.P);
         check(clock.getStatus() == Animation.Status.STOPPED, "Pause did not stop clock");
@@ -107,7 +176,7 @@ public class GameUiSmokeCheck {
         Timeline secondClock = (Timeline) field(second, "animation");
         secondStage.close();
         check(secondClock.getStatus() == Animation.Status.STOPPED, "Closing window left timeline active");
-        System.out.println("PASS: cached rendering, one body snapshot per frame, UI layout, pause/resume, viewport scaling and session cleanup");
+        System.out.println("PASS: final-coin completion, power-up expiry, small-board silver, keypad input, cached rendering, layout and session cleanup");
     }
     public static void main(String[] args) throws Exception {
         Platform.startup(() -> Platform.setImplicitExit(false));

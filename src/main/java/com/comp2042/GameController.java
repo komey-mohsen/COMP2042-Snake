@@ -75,8 +75,9 @@ public class GameController {
     public void handle(KeyEvent event) {
         if (controls.getState() == SessionControls.State.CLOSED) return;
         boolean finished = snek.getDead() || game.gameWon();
-        if (!finished && event.getCode().isArrowKey()) {
-            controls.requestDirection(Direction.valueOf(event.getCode().name()));
+        Direction requested = GameKeys.directionFor(event.getCode());
+        if (!finished && requested != null) {
+            controls.requestDirection(requested);
             gameView.showSessionState(controls.getState());
         }
 
@@ -154,7 +155,8 @@ public class GameController {
             animation.setRate(game.getSpeed() + tempCoin.getSpeedBonus());
         } else if (coin.getClass().equals(SilverCoin.class)){
             Random rnd = new Random();
-            int added = obstacle.newObstacles(snek, coin, rnd.nextInt(game.getWidth() * game.getHeight()/ 20) +3);
+            int variation = Math.max(1, game.getWidth() * game.getHeight() / 20);
+            int added = obstacle.newObstacles(snek, coin, rnd.nextInt(variation) + 3);
             game.decMaxScore(added);
         } else if (coin.getClass().equals(BlueCoin.class)) {
             snek.ignoreBorders(true);
