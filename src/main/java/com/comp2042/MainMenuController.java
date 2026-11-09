@@ -81,6 +81,11 @@ public class MainMenuController {
 
         GameView gameView = new GameView(game);
         GameController controller = new GameController(snek, coin, game, gameView, obstacle, gameStage);
+        gameStage.setOnHidden(event -> controller.close());
+        gameStage.setOnCloseRequest(event -> {
+            controller.close();
+            viewManager.getPrimaryStage().show();
+        });
 
         StackPane gamePane = new StackPane();
         BorderPane root = new BorderPane(gamePane);

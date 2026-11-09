@@ -6,7 +6,6 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
-import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Screen;
@@ -177,14 +176,14 @@ public class GameView {
         turnArray = new int[game.getWidth()][game.getHeight()];
     }
 
-    public void turnDir(Snake snek) {
-        if ((GameController.lastKey == KeyCode.LEFT && GameController.key == KeyCode.UP) || (GameController.lastKey == KeyCode.DOWN && GameController.key == KeyCode.RIGHT)) {
+    public void turnDir(Snake snek, Direction previous, Direction current) {
+        if ((previous == Direction.LEFT && current == Direction.UP) || (previous == Direction.DOWN && current == Direction.RIGHT)) {
             turnArray[(int) snek.getHead().getX()][(int) snek.getHead().getY()] = 2;
-        } else if ((GameController.lastKey == KeyCode.LEFT && GameController.key == KeyCode.DOWN) || (GameController.lastKey == KeyCode.UP && GameController.key == KeyCode.RIGHT)) {
+        } else if ((previous == Direction.LEFT && current == Direction.DOWN) || (previous == Direction.UP && current == Direction.RIGHT)) {
             turnArray[(int) snek.getHead().getX()][(int) snek.getHead().getY()] = 3;
-        } else if ((GameController.lastKey == KeyCode.RIGHT && GameController.key == KeyCode.UP) || (GameController.lastKey == KeyCode.DOWN && GameController.key == KeyCode.LEFT)) {
+        } else if ((previous == Direction.RIGHT && current == Direction.UP) || (previous == Direction.DOWN && current == Direction.LEFT)) {
             turnArray[(int) snek.getHead().getX()][(int) snek.getHead().getY()] = 1;
-        } else if ((GameController.lastKey == KeyCode.UP && GameController.key == KeyCode.LEFT) || (GameController.lastKey == KeyCode.RIGHT && GameController.key == KeyCode.DOWN)) {
+        } else if ((previous == Direction.UP && current == Direction.LEFT) || (previous == Direction.RIGHT && current == Direction.DOWN)) {
             turnArray[(int) snek.getHead().getX()][(int) snek.getHead().getY()] = 4;
         } else turnArray[(int) snek.getHead().getX()][(int) snek.getHead().getY()] = 0;
     }

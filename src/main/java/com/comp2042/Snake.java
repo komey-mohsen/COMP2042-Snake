@@ -33,57 +33,42 @@ public class Snake {
         this.gy = y;
     }
 
-    public void move(char dir) {
-        body.add(new Point(head));
-        switch (dir) {
-            case 'U':
-                snakeDir = 0;
-                head.translate(0, -1);
-                if (borderControl() && (!ignoreBorders && !noBorder) || obstacle.getObstacles().contains(head)) {
-                    head.translate(0, 1);
-                    dead = true;
-                } else if (borderControl() && (ignoreBorders || noBorder)) {
-                    head.setLocation(head.getX(), gy - 1);
-                }
-                break;
-
-            case 'D':
-                snakeDir = 180;
-                head.translate(0, 1);
-                if (borderControl() && (!ignoreBorders && !noBorder) || obstacle.getObstacles().contains(head)) {
-                    head.translate(0, -1);
-                    dead = true;
-                } else if (borderControl() && (ignoreBorders || noBorder)) {
-                    head.setLocation(head.getX(), 0);
-                }
-                break;
-
-            case 'L':
-                snakeDir = 270;
-                head.translate(-1, 0);
-                if (borderControl() && (!ignoreBorders && !noBorder) || obstacle.getObstacles().contains(head)) {
-                    head.translate(1, 0);
-                    dead = true;
-                } else if (borderControl() && (ignoreBorders || noBorder)) {
-                    head.setLocation(gx - 1, head.getY());
-                }
-                break;
-
-            case 'R':
-                snakeDir = 90;
-                head.translate(1, 0);
-                if (borderControl() && (!ignoreBorders && !noBorder) || obstacle.getObstacles().contains(head)) {
-                    head.translate(-1, 0);
-                    dead = true;
-                } else if (borderControl() && (ignoreBorders || noBorder)) {
-                    head.setLocation(0, head.getY());
-                }
-                break;
-        }
-
-        if (body.size() > 4 && hitSelf() && !body.get(0).equals(head)) {
+    /**
+     * Advances one tick, checking the final wrapped destination before changing the body.
+     * @param dir U, D, L or R
+     * @param food position of the current coin, or null when no coin is present
+     * @return true only when this move safely collects the coin and grows the snake
+     */
+    public boolean move(char dir, Point food) {
+        if (dead) return false;
+        Point destination = new Point(head);
+        int rotation = switch (dir) {
+            case 'U' -> { destination.translate(0, -1); yield 0; }
+            case 'D' -> { destination.translate(0, 1); yield 180; }
+            case 'L' -> { destination.translate(-1, 0); yield 270; }
+            case 'R' -> { destination.translate(1, 0); yield 90; }
+            default -> throw new IllegalArgumentException("Direction must be U, D, L or R");
+        };
+        if (ignoreBorders || noBorder) {
+            destination.setLocation(Math.floorMod(destination.x, gx), Math.floorMod(destination.y, gy));
+        } else if (destination.x < 0 || destination.y < 0 || destination.x >= gx || destination.y >= gy) {
             dead = true;
+            return false;
         }
+
+        boolean grows = destination.equals(food);
+        // A tail cell is free only if it moves away on this non-growing tick.
+        int firstOccupied = grows ? 0 : 1;
+        boolean hitsBody = body.subList(firstOccupied, body.size()).contains(destination);
+        if (obstacle.getObstacles().contains(destination) || hitsBody) {
+            dead = true;
+            return false;
+        }
+        if (!grows) body.remove(0);
+        body.add(new Point(head));
+        head.setLocation(destination);
+        snakeDir = rotation;
+        return grows;
     }
 
     public int getBodyDir(int bodyCount) {
@@ -94,17 +79,6 @@ public class Snake {
         } else {
             return 0;
         }
-    }
-
-    public boolean ateCoin(Coin coin) {
-        if (!head.equals(coin.getPos())) {
-            body.remove(0);
-        }
-        return head.equals(coin.getPos());
-    }
-
-    private boolean borderControl() {
-        return head.getX() < 0 || head.getY() < 0 || head.getX() >= gx || head.getY() >= gy;
     }
 
     public boolean hitSelf() {

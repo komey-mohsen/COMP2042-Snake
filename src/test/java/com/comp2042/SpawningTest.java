@@ -70,8 +70,7 @@ class SpawningTest {
             Snake snake = new Snake(3, 1, false, obstacles);
             Coin lastCoin = new Coin(3, 1, snake, obstacles);
             assertEquals(new Point(0, 0), lastCoin.getPos());
-            snake.move('L');
-            assertTrue(snake.ateCoin(lastCoin));
+            assertTrue(snake.move('L', lastCoin.getPos()));
             assertThrows(IllegalStateException.class, () -> new Coin(3, 1, snake, obstacles));
         });
     }

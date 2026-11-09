@@ -22,9 +22,7 @@ public class GameController {
     private String coinSoundPath = "resources/views/res/coinSound.wav";
     private Obstacle obstacle;
 
-    public static KeyCode key = KeyCode.LEFT;
-    public static KeyCode lastKey = KeyCode.LEFT;
-    private boolean keyPressed = false;
+    private final SessionControls controls;
 
     private int legacyScoreMultiplier = 2;
 
@@ -41,34 +39,26 @@ public class GameController {
         this.stage = stage;
 
         this.obstacle = obstacle;
-        key = KeyCode.LEFT;
-        lastKey = KeyCode.LEFT;
+        controls = new SessionControls(animation::play, animation::stop);
         animation.setCycleCount(Animation.INDEFINITE);
         animation.setRate(game.getSpeed());
     }
 
-    private final Timeline animation = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+    private final Timeline animation = new Timeline(new KeyFrame(Duration.seconds(1), event -> tick()));
+
+    private void tick() {
+        if (controls.getState() != SessionControls.State.RUNNING) return;
         if (snek.getDead() || game.gameWon()) {
-            this.animation.stop();
+            controls.finish();
             return;
         } else {
 
-            if (key.equals(KeyCode.LEFT)) {
-                snek.move('L');
-            } else if (key.equals(KeyCode.RIGHT)) {
-                snek.move('R');
-            } else if (key.equals(KeyCode.UP)) {
-                snek.move('U');
-            } else if (key.equals(KeyCode.DOWN)) {
-                snek.move('D');
-            }
-
-            if (!snek.getDead() && snek.ateCoin(coin)) {
+            boolean collected = snek.move(controls.getDirection().name().charAt(0), coin.getPos());
+            if (collected) {
                 powerCoin();
                 game.incScore();
                 if (game.gameWon()) {
-                    this.animation.stop();
-                    keyPressed = false;
+                    controls.finish();
                     coin = null;
                     gameView.gameWon();
                     gameView.updateScoreLabel();
@@ -78,7 +68,8 @@ public class GameController {
                 newCoin();
             }
 
-            keyPressed = false;
+            controls.tickCompleted();
+            if (snek.getDead()) controls.finish();
 
             if (!snek.getDead() || snek.hitSelf()) {
                 gameView.drawGrid(coin, snek, obstacle, gameView.gc, false, 0);
@@ -88,21 +79,19 @@ public class GameController {
             gameView.gameOver(snek);
             gameView.updateScoreLabel();
         }
-    }));
+    }
 
     public void handle(KeyEvent event) {
+        if (controls.getState() == SessionControls.State.CLOSED) return;
         boolean finished = snek.getDead() || game.gameWon();
-        if (event.getCode().isArrowKey() && !finished) animation.play();
-
-        if (!finished && valKey(event.getCode()) && !keyPressed) {
-            lastKey = key;
-            key = event.getCode();
-            keyPressed = true;
-            gameView.turnDir(snek);
+        if (!finished && event.getCode().isArrowKey()) {
+            if (controls.requestDirection(Direction.valueOf(event.getCode().name()))) {
+                gameView.turnDir(snek, controls.getPreviousDirection(), controls.getDirection());
+            }
         }
 
         if (event.getCode().equals(KeyCode.P)) {
-            animation.stop();
+            pause();
         }
 
         if (event.getCode().equals(KeyCode.TAB) || event.getCode().equals(KeyCode.R)) {
@@ -125,21 +114,15 @@ public class GameController {
         }
 
         if (event.getCode().equals(KeyCode.ESCAPE)) {
-            animation.stop();
-            MainMenuController mainMenuController = new MainMenuController();
-            mainMenuController.getViewManager().getPrimaryStage().show();
-            mainMenuController.getViewManager().getGameStage().close();
+            close();
+            Main.getViewManager().getPrimaryStage().show();
+            stage.close();
         }
     }
 
-    private boolean valKey(KeyCode key) {
-        if (!key.isArrowKey()) return false;
-        return Direction.valueOf(this.key.name()).canTurnTo(Direction.valueOf(key.name()));
-    }
-
     public void restart() {
-
-        animation.stop();
+        if (controls.getState() == SessionControls.State.CLOSED) return;
+        controls.reset();
         animation.jumpTo(Duration.ZERO);
 
         obstacle.reset();
@@ -148,9 +131,6 @@ public class GameController {
         coin = new Coin(game.getWidth(), game.getHeight(), snek, obstacle);
 
         animation.setRate(game.getSpeed());
-        key = KeyCode.LEFT;
-        lastKey = KeyCode.LEFT;
-        keyPressed = false;
         gameView.resetTurns();
 
         gameView.gameWon();
@@ -159,6 +139,12 @@ public class GameController {
 
         gameView.drawGrid(coin, snek, obstacle, gameView.gc, false, 0);
     }
+
+    /** Pauses only this window's round. */
+    public void pause() { controls.pause(); }
+
+    /** Stops a session when its window is closed or hidden. */
+    public void close() { controls.close(); }
 
     private void powerCoin() {
         animation.setRate(game.getSpeed());
