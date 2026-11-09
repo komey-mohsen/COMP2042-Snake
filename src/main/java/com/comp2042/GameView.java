@@ -9,6 +9,7 @@ import javafx.scene.text.Font;
 import java.awt.Point;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Locale;
 
 public class GameView {
 
@@ -20,6 +21,12 @@ public class GameView {
     public Label scoreLabel;
     public Label statusLabel;
     public Label effectLabel;
+    public Label comboLabel;
+    public Label bestScoreLabel;
+    public Label scoreSaveLabel;
+    private int displayedBest;
+    private Boolean scoreSaved;
+    private SessionControls.State sessionState = SessionControls.State.READY;
     private boolean gameOverVis = false;
     private boolean gameWonVis = false;
 
@@ -70,6 +77,18 @@ public class GameView {
         effectLabel = new Label(game.isPowerUp() ? "No temporary power-up" : "Power-ups disabled");
         effectLabel.setWrapText(true);
         effectLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #38543d;");
+        comboLabel = new Label();
+        comboLabel.setWrapText(true);
+        comboLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #8a3e15; -fx-font-weight: bold;");
+        bestScoreLabel = new Label();
+        bestScoreLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #38543d;");
+        scoreSaveLabel = new Label();
+        scoreSaveLabel.setWrapText(true);
+        scoreSaveLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #8a3e15;");
+        if (scoreSaved == null) clearScoreSave();
+        else showScoreSave(scoreSaved);
+        updateBestScore(displayedBest, false);
+        updateScoreLabel();
     }
 
     public void setFullscreen(boolean fullScreen, Obstacle obstacle, Snake snek, Coin coin) {
@@ -155,14 +174,47 @@ public class GameView {
 
     public void updateScoreLabel() {
         scoreLabel.setText("Score: " + game.getScorePoints());
+        if (comboLabel == null) return;
+        if (sessionState == SessionControls.State.FINISHED || sessionState == SessionControls.State.CLOSED) {
+            comboLabel.setText("Round best combo: ×" + game.getCombo().bestMultiplier());
+        } else {
+            double seconds = game.getCombo().remaining().toMillis() / 1000.0;
+            comboLabel.setText(seconds > 0
+                    ? String.format(Locale.ROOT, "Combo ×%d · %.1fs remaining%s", game.getCombo().multiplier(), seconds,
+                        sessionState == SessionControls.State.PAUSED ? " (paused)" : "")
+                    : "Combo ×1 · collect within 5s to chain up to ×5");
+        }
     }
 
     /** Displays the pause/ready state without covering a completed game's result. */
     public void showSessionState(SessionControls.State state) {
+        sessionState = state;
         if (statusLabel == null) return;
         statusLabel.setText(state == SessionControls.State.PAUSED
                 ? "PAUSED\nPress an arrow key to resume" : "Press an arrow key to start");
         statusLabel.setVisible(state == SessionControls.State.PAUSED || state == SessionControls.State.READY);
+    }
+
+    public void updateBestScore(int best, boolean newRecord) {
+        displayedBest = best;
+        if (bestScoreLabel != null) bestScoreLabel.setText("Best: " + best + (newRecord ? " · new record!" : ""));
+    }
+
+    public void showScoreSave(boolean saved) {
+        scoreSaved = saved;
+        if (scoreSaveLabel == null) return;
+        scoreSaveLabel.setText(saved ? "Local high scores updated."
+                : "Score kept for this session. Open High Scores to retry local saving.");
+        scoreSaveLabel.setManaged(true);
+        scoreSaveLabel.setVisible(true);
+    }
+
+    public void clearScoreSave() {
+        scoreSaved = null;
+        if (scoreSaveLabel == null) return;
+        scoreSaveLabel.setText("");
+        scoreSaveLabel.setManaged(false);
+        scoreSaveLabel.setVisible(false);
     }
 
     /** Keeps temporary-effect lifetime and persistent obstacles visible during play. */

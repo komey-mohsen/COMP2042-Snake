@@ -14,10 +14,16 @@ public class ViewManager {
     private AnchorPane root;
 
     private Stage gameStage;
+    private final HighScoreStore highScores;
 
     private Image snakeLogo = new Image("resources/views/res/SnakeLogoWhite.png");
 
     public ViewManager() {
+        this(HighScoreStore.local());
+    }
+
+    ViewManager(HighScoreStore highScores) {
+        this.highScores = java.util.Objects.requireNonNull(highScores);
     }
 
     public void initalizeMainMenu() {
@@ -52,4 +58,6 @@ public class ViewManager {
     public Stage getGameStage() {
         return gameStage;
     }
+
+    public HighScoreStore getHighScores() { return highScores; }
 }

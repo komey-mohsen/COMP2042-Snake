@@ -3,21 +3,32 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
-<AnchorPane fx:id="menuRoot" id="menuRoot" prefWidth="760" prefHeight="480" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.comp2042.MainMenuController">
+<AnchorPane fx:id="menuRoot" id="menuRoot" prefWidth="760" prefHeight="560" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.comp2042.MainMenuController">
     <stylesheets><URL value="@menu.css" /></stylesheets>
     <children>
         <Pane fx:id="particles" mouseTransparent="true" AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" />
         <VBox fx:id="mainContent" alignment="TOP_CENTER" spacing="0" AnchorPane.topAnchor="37" AnchorPane.bottomAnchor="20" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
             <Label text="SNAKE" styleClass="menu-title" />
             <Label text="T H E   A R C A D E   C L A S S I C" styleClass="menu-subtitle" />
-            <Region prefHeight="43" />
+            <Region prefHeight="24" />
             <VBox alignment="CENTER" spacing="12">
                 <Button text="Play" onAction="#handleStart" styleClass="menu-button" />
+                <Button text="High Scores" onAction="#handleHighScores" styleClass="menu-button" />
                 <Button text="Settings" onAction="#handleSettings" styleClass="menu-button" />
                 <Button text="Quit" onAction="#handleQuit" styleClass="menu-button" />
             </VBox>
             <Region VBox.vgrow="ALWAYS" minHeight="20" />
             <Label text="&#8593;  &#8595;  &#8592;  &#8594;   MOVE     &#183;     P   PAUSE     &#183;     R   RESTART" styleClass="menu-hint" />
+        </VBox>
+        <VBox fx:id="scoresContent" visible="false" managed="false" alignment="CENTER" spacing="12" AnchorPane.topAnchor="24" AnchorPane.bottomAnchor="24" AnchorPane.leftAnchor="70" AnchorPane.rightAnchor="70">
+            <Label text="HIGH SCORES" styleClass="settings-title" />
+            <HBox alignment="CENTER" spacing="16">
+                <ComboBox fx:id="scoreDifficultyChoice" onAction="#refreshHighScores" />
+                <CheckBox fx:id="scorePowerUpsChoice" text="Power-ups" selected="true" onAction="#refreshHighScores" />
+            </HBox>
+            <TableView fx:id="highScoresTable" prefHeight="260" styleClass="scores-table" />
+            <Label fx:id="scoresStatus" wrapText="true" styleClass="settings-caption" />
+            <Button text="Back" onAction="#handleBack" styleClass="menu-button" />
         </VBox>
         <VBox fx:id="settingsContent" visible="false" managed="false" alignment="CENTER" spacing="18" AnchorPane.topAnchor="35" AnchorPane.bottomAnchor="30" AnchorPane.leftAnchor="150" AnchorPane.rightAnchor="150">
             <Label text="SETTINGS" styleClass="settings-title" />
