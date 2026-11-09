@@ -59,6 +59,7 @@ public class GameController {
                 game.incScore();
                 if (game.gameWon()) {
                     controls.finish();
+                    gameView.showSessionState(controls.getState());
                     coin = null;
                     gameView.gameWon();
                     gameView.updateScoreLabel();
@@ -70,6 +71,7 @@ public class GameController {
 
             controls.tickCompleted();
             if (snek.getDead()) controls.finish();
+            gameView.showSessionState(controls.getState());
 
             if (!snek.getDead() || snek.hitSelf()) {
                 gameView.drawGrid(coin, snek, obstacle, gameView.gc, false, 0);
@@ -88,6 +90,7 @@ public class GameController {
             if (controls.requestDirection(Direction.valueOf(event.getCode().name()))) {
                 gameView.turnDir(snek, controls.getPreviousDirection(), controls.getDirection());
             }
+            gameView.showSessionState(controls.getState());
         }
 
         if (event.getCode().equals(KeyCode.P)) {
@@ -99,19 +102,15 @@ public class GameController {
             event.consume();
         }
 
-        if (event.getCode().equals(KeyCode.PLUS)) {
-            gameView.scaleToFullscreen(true, stage, obstacle, snek, coin);
-            gameView.gameOverLabel.setStyle("-fx-font-size: 50;");
-            gameView.gameWonLabel.setStyle("-fx-font-size: 50;");
-            gameView.scoreLabel.setStyle("-fx-font-size: 35;");
+        if (event.getCode().equals(KeyCode.PLUS) || event.getCode().equals(KeyCode.ADD)
+                || (event.getCode().equals(KeyCode.EQUALS) && event.isShiftDown())) {
+            stage.setFullScreen(true);
         }
 
-        if (event.getCode().equals(KeyCode.MINUS)) {
-            gameView.scaleToFullscreen(false, stage, obstacle, snek, coin);
-            gameView.gameOverLabel.setStyle("-fx-font-size: 15;");
-            gameView.gameWonLabel.setStyle("-fx-font-size: 15;");
-            gameView.scoreLabel.setStyle("-fx-font-size: 15;");
+        if (event.getCode().equals(KeyCode.MINUS) || event.getCode().equals(KeyCode.SUBTRACT)) {
+            stage.setFullScreen(false);
         }
+        if (event.getCode().equals(KeyCode.F11)) stage.setFullScreen(!stage.isFullScreen());
 
         if (event.getCode().equals(KeyCode.ESCAPE)) {
             close();
@@ -136,15 +135,30 @@ public class GameController {
         gameView.gameWon();
         gameView.gameOver(snek);
         gameView.updateScoreLabel();
+        gameView.updateEffects(null, obstacle);
+        gameView.showSessionState(controls.getState());
 
         gameView.drawGrid(coin, snek, obstacle, gameView.gc, false, 0);
     }
 
     /** Pauses only this window's round. */
-    public void pause() { controls.pause(); }
+    public void pause() {
+        controls.pause();
+        gameView.showSessionState(controls.getState());
+    }
 
     /** Stops a session when its window is closed or hidden. */
     public void close() { controls.close(); }
+
+    public void resizeBoard(double width, double height) {
+        if (controls.getState() != SessionControls.State.CLOSED) {
+            gameView.resizeBoard(width, height, obstacle, snek, coin);
+        }
+    }
+
+    public void fullscreenChanged(boolean fullscreen) {
+        gameView.setFullscreen(fullscreen, obstacle, snek, coin);
+    }
 
     private void powerCoin() {
         animation.setRate(game.getSpeed());
@@ -160,6 +174,7 @@ public class GameController {
             snek.ignoreBorders(true);
         }
         game.addPoints(coin.getPoints());
+        gameView.updateEffects(coin, obstacle);
     }
 
     private void newCoin() {

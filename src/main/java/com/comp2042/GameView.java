@@ -8,8 +8,6 @@ import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
-import javafx.stage.Screen;
-import javafx.stage.Stage;
 
 import java.awt.*;
 
@@ -21,27 +19,32 @@ public class GameView {
     public Label gameOverLabel;
     public Label gameWonLabel;
     public Label scoreLabel;
+    public Label statusLabel;
+    public Label effectLabel;
     private boolean gameOverVis = false;
     private boolean gameWonVis = false;
 
     private Game game;
-    private double initX;
-    private double initY;
-    private double fullScale = 1;
+    private final BoardLayout baseLayout;
+    private BoardLayout boardLayout;
+    private double viewportWidth;
+    private double viewportHeight;
     private boolean fullsize = false;
-    private int[][] turnArray = new int[MainMenuController.getxValue()][MainMenuController.getyValue()];
+    private int[][] turnArray;
 
     public GameView(Game game) {
         this.game = game;
+        baseLayout = new BoardLayout(game.getWidth(), game.getHeight(), game.getMultiplier());
+        boardLayout = baseLayout;
+        resetTurns();
     }
 
     public void makeScene(Scene scene, Snake snek, Coin coin) {
-        Scene gameScene = scene;
-        gridCanvas = new Canvas(game.getWidth() * game.getMultiplier(), game.getHeight() * game.getMultiplier());
-        initX = gridCanvas.getWidth();
-        initY = gridCanvas.getHeight();
+        gridCanvas = new Canvas(boardLayout.width(), boardLayout.height());
+        viewportWidth = boardLayout.width();
+        viewportHeight = boardLayout.height();
         gc = gridCanvas.getGraphicsContext2D();
-        drawGrid(coin, snek, gc);
+        drawGrid(coin, snek, null, gc, false, 0);
 
         gameOverLabel = new Label("GAME OVER");
         gameOverLabel.setId("gameOverLabel");
@@ -59,30 +62,33 @@ public class GameView {
         scoreLabel.getStylesheets().add(css);
         scoreLabel.setFont(new Font("Arial", 20));
         scoreLabel.setVisible(true);
+
+        statusLabel = new Label();
+        statusLabel.setWrapText(true);
+        statusLabel.setStyle("-fx-background-color: rgba(254,255,228,0.94); -fx-text-fill: #243629; "
+                + "-fx-font-size: 18px; -fx-padding: 12px; -fx-text-alignment: center;");
+        statusLabel.setMouseTransparent(true);
+        showSessionState(SessionControls.State.READY);
+        effectLabel = new Label(game.isPowerUp() ? "No temporary power-up" : "Power-ups disabled");
+        effectLabel.setWrapText(true);
+        effectLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #38543d;");
     }
 
-    public void scaleToFullscreen(boolean fullScreen, Stage primaryStage, Obstacle obstacle, Snake snek, Coin coin) {
-        primaryStage.setFullScreen(fullScreen);
+    public void setFullscreen(boolean fullScreen, Obstacle obstacle, Snake snek, Coin coin) {
+        fullsize = fullScreen;
+        resizeBoard(viewportWidth, viewportHeight, obstacle, snek, coin);
+    }
 
-        double xScaling = Screen.getPrimary().getVisualBounds().getHeight() / initY;
-        double yScaling = Screen.getPrimary().getVisualBounds().getWidth() / initX;
-
-        if (fullScreen && !fullsize) {
-            if (xScaling < yScaling) {
-                fullScale = xScaling;
-            } else {
-                fullScale = yScaling;
-            }
-            gridCanvas.setWidth(gridCanvas.getWidth() * fullScale);
-            gridCanvas.setHeight(gridCanvas.getHeight() * fullScale);
-            fullsize = true;
-        } else if (!fullScreen) {
-            fullScale = 1;
-            gridCanvas.setWidth(initX);
-            gridCanvas.setHeight(initY);
-            fullsize = false;
-        }
-
+    /** Recalculates from the original layout rather than repeatedly multiplying canvas dimensions. */
+    public void resizeBoard(double width, double height, Obstacle obstacle, Snake snek, Coin coin) {
+        if (width <= 0 || height <= 0) return;
+        viewportWidth = width;
+        viewportHeight = height;
+        BoardLayout fitted = baseLayout.fitted(width, height);
+        boardLayout = fullsize || fitted.cellSize() < baseLayout.cellSize() ? fitted : baseLayout;
+        gridCanvas.setWidth(boardLayout.width());
+        gridCanvas.setHeight(boardLayout.height());
+        double fullScale = boardLayout.cellSize() / baseLayout.cellSize();
         gameOverLabel.setFont(new Font("Arial", 25 * fullScale));
         gameWonLabel.setFont(new Font("Arial", 25 * fullScale));
         drawGrid(coin, snek, obstacle, gc, false, 0);
@@ -92,7 +98,10 @@ public class GameView {
         gc.setFill(game.getColor());
         gc.fillRect(0, 0, gridCanvas.getWidth(), gridCanvas.getHeight());
 
-        if (coin != null) gc.drawImage(coin.getImage(), (coin.getPos().x * game.getMultiplier()) * fullScale, (coin.getPos().y * game.getMultiplier()) * fullScale, game.getMultiplier() * fullScale - 3 * fullScale, game.getMultiplier() * fullScale - 3 * fullScale);
+        if (coin != null) {
+            BoardLayout.Cell cell = boardLayout.bounds(coin.getPos());
+            gc.drawImage(coin.getImage(), cell.x(), cell.y(), cell.size() * 0.85, cell.size() * 0.85);
+        }
 
         int bodyIndex = 0;
         for (Point point : snek.getBody()) {
@@ -102,25 +111,13 @@ public class GameView {
 
         drawHead(snek);
 
-        gc.setFill(obstacle.getColor());
-        for (Point point : obstacle.getObstacles()) {
-            gc.fillRect(point.x * game.getMultiplier() * fullScale, point.y * game.getMultiplier() * fullScale, game.getMultiplier() * fullScale, game.getMultiplier() * fullScale);
+        if (obstacle != null) {
+            gc.setFill(obstacle.getColor());
+            for (Point point : obstacle.getObstacles()) {
+                BoardLayout.Cell cell = boardLayout.bounds(point);
+                gc.fillRect(cell.x(), cell.y(), cell.size(), cell.size());
+            }
         }
-    }
-
-    private void drawGrid(Coin coin, Snake snek, GraphicsContext gc) {
-        gc.setFill(game.getColor());
-        gc.fillRect(0, 0, gridCanvas.getWidth(), gridCanvas.getHeight());
-
-        gc.drawImage(coin.getImage(), (coin.getPos().x * game.getMultiplier()) * fullScale, (coin.getPos().y * game.getMultiplier()) * fullScale, game.getMultiplier() * fullScale - 3 * fullScale, game.getMultiplier() * fullScale - 3 * fullScale);
-
-        int bodyIndex = 0;
-        for (Point point : snek.getBody()) {
-            drawBody(snek, point, bodyIndex);
-            bodyIndex++;
-        }
-
-        drawHead(snek);
     }
 
     private void drawHead(Snake snek) {
@@ -128,7 +125,7 @@ public class GameView {
         SnapshotParameters params = new SnapshotParameters();
         params.setFill(Color.TRANSPARENT);
         Image rotatedImage = snek.getImageViewHead().snapshot(params, null);
-        gc.drawImage(rotatedImage, (snek.getHead().x * game.getMultiplier()) * fullScale, (snek.getHead().y * game.getMultiplier()) * fullScale, game.getMultiplier() * fullScale * fullScale, game.getMultiplier() * fullScale * fullScale);
+        drawCellImage(rotatedImage, snek.getHead());
     }
 
     private void drawBody(Snake snek, Point point, int index) {
@@ -169,7 +166,12 @@ public class GameView {
             turnArray[(int) snek.getBody().get(0).getX()][(int) snek.getBody().get(0).getY()] = 0;
         }
 
-        gc.drawImage(rotatedImage, (point.x * game.getMultiplier()) * fullScale, (point.y * game.getMultiplier()) * fullScale, game.getMultiplier() * fullScale * fullScale, game.getMultiplier() * fullScale * fullScale);
+        drawCellImage(rotatedImage, point);
+    }
+
+    private void drawCellImage(Image image, Point position) {
+        BoardLayout.Cell cell = boardLayout.bounds(position);
+        gc.drawImage(image, cell.x(), cell.y(), cell.size(), cell.size());
     }
 
     public void resetTurns() {
@@ -210,6 +212,24 @@ public class GameView {
 
     public void updateScoreLabel() {
         scoreLabel.setText("Score: " + game.getScorePoints());
+    }
+
+    /** Displays the pause/ready state without covering a completed game's result. */
+    public void showSessionState(SessionControls.State state) {
+        if (statusLabel == null) return;
+        statusLabel.setText(state == SessionControls.State.PAUSED
+                ? "PAUSED\nPress an arrow key to resume" : "Press an arrow key to start");
+        statusLabel.setVisible(state == SessionControls.State.PAUSED || state == SessionControls.State.READY);
+    }
+
+    /** Keeps temporary-effect lifetime and persistent obstacles visible during play. */
+    public void updateEffects(Coin collected, Obstacle obstacle) {
+        String effect;
+        if (!game.isPowerUp()) effect = "Power-ups disabled";
+        else if (collected instanceof RainbowCoin) effect = "Speed boost until the next coin";
+        else if (collected instanceof BlueCoin) effect = "Edge wrapping until the next coin";
+        else effect = "No temporary power-up";
+        effectLabel.setText(effect + " | Obstacles: " + obstacle.getObstacles().size());
     }
 
 }

@@ -7,6 +7,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TitledPane;
 import javafx.fxml.FXML;
 import javafx.application.Platform;
 import javafx.scene.layout.Pane;
@@ -89,21 +91,47 @@ public class MainMenuController {
 
         StackPane gamePane = new StackPane();
         BorderPane root = new BorderPane(gamePane);
-        gameScene = new Scene(root, game.getWidth() * game.getMultiplier(), game.getHeight() * game.getMultiplier() + 60);
+        gameScene = new Scene(root, game.getWidth() * game.getMultiplier(), game.getHeight() * game.getMultiplier() + 240);
 
         gameScene.setOnKeyPressed(controller::handle);
 
         gameView.makeScene(gameScene, snek, coin);
-        gamePane.getChildren().addAll(gameView.gridCanvas, gameView.gameOverLabel, gameView.gameWonLabel);
+        gamePane.setMinSize(0, 0);
+        gamePane.widthProperty().addListener((observable, before, after) ->
+                controller.resizeBoard(gamePane.getWidth(), gamePane.getHeight()));
+        gamePane.heightProperty().addListener((observable, before, after) ->
+                controller.resizeBoard(gamePane.getWidth(), gamePane.getHeight()));
+        gameStage.fullScreenProperty().addListener((observable, before, after) -> controller.fullscreenChanged(after));
+        gamePane.getChildren().addAll(gameView.gridCanvas, gameView.gameOverLabel, gameView.gameWonLabel, gameView.statusLabel);
         gamePane.setAlignment(gameView.gameOverLabel, Pos.TOP_CENTER);
         gamePane.setAlignment(gameView.gameWonLabel, Pos.TOP_CENTER);
         Button restartButton = new Button("Restart");
         restartButton.setFocusTraversable(false);
         restartButton.setTooltip(new Tooltip("Restart (R or Tab). Press an arrow key to begin again."));
         restartButton.setOnAction(event -> controller.restart());
-        HBox footer = new HBox(20, gameView.scoreLabel, restartButton);
+        Button pauseButton = new Button("Pause (P)");
+        pauseButton.setFocusTraversable(false);
+        pauseButton.setOnAction(event -> controller.pause());
+        HBox buttons = new HBox(12, gameView.scoreLabel, restartButton, pauseButton);
+        buttons.setAlignment(Pos.CENTER);
+        Label controlsHelp = new Label("Arrows: move / resume | P: pause | R / Tab: restart\n"
+                + "Esc: menu | F11 or + / -: fullscreen");
+        controlsHelp.setWrapText(true);
+        Label coinHelp = new Label(game.isPowerUp()
+                ? "Red: +5 | Gold: +15 | Other coins: +5\n"
+                    + "Rainbow: faster movement | Blue: edge wrapping\n"
+                    + "Rainbow and blue last until the next coin.\n"
+                    + "Silver: adds obstacles that remain until restart."
+                : "Power-ups are disabled. Red coins give +5 points.");
+        coinHelp.setWrapText(true);
+        VBox helpContent = new VBox(5, controlsHelp, coinHelp);
+        helpContent.setStyle("-fx-font-size: 12px;");
+        TitledPane help = new TitledPane("Controls & coin rules", helpContent);
+        help.setFocusTraversable(false);
+        help.setExpanded(true);
+        VBox footer = new VBox(6, buttons, gameView.effectLabel, help);
         footer.setAlignment(Pos.CENTER);
-        footer.setPadding(new Insets(10));
+        footer.setPadding(new Insets(8));
         root.setBottom(footer);
     }
 
