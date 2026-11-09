@@ -48,7 +48,8 @@ public class GameController {
     }
 
     private final Timeline animation = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-        if (snek.getDead()) {
+        if (snek.getDead() || game.gameWon()) {
+            this.animation.stop();
             return;
         } else {
 
@@ -66,6 +67,11 @@ public class GameController {
                 powerCoin();
                 game.incScore();
                 if (game.gameWon()) {
+                    this.animation.stop();
+                    keyPressed = false;
+                    coin = null;
+                    gameView.gameWon();
+                    gameView.updateScoreLabel();
                     gameView.drawGrid(coin, snek, obstacle, gameView.gc, false, 0);
                     return;
                 }
@@ -85,9 +91,10 @@ public class GameController {
     }));
 
     public void handle(KeyEvent event) {
-        if (event.getCode().isArrowKey()) animation.play();
+        boolean finished = snek.getDead() || game.gameWon();
+        if (event.getCode().isArrowKey() && !finished) animation.play();
 
-        if (valKey(event.getCode()) && !keyPressed) {
+        if (!finished && valKey(event.getCode()) && !keyPressed) {
             lastKey = key;
             key = event.getCode();
             keyPressed = true;
@@ -127,13 +134,7 @@ public class GameController {
 
     private boolean valKey(KeyCode key) {
         if (!key.isArrowKey()) return false;
-        else {
-            if (key.equals(KeyCode.LEFT)) if (!this.key.equals(KeyCode.RIGHT)) return true;
-            if (key.equals(KeyCode.RIGHT)) if (!this.key.equals(KeyCode.LEFT)) return true;
-            if (key.equals(KeyCode.DOWN)) if (!this.key.equals(KeyCode.DOWN)) return true;
-            if (key.equals(KeyCode.UP)) return !this.key.equals(KeyCode.DOWN);
-            return false;
-        }
+        return Direction.valueOf(this.key.name()).canTurnTo(Direction.valueOf(key.name()));
     }
 
     public void restart() {
@@ -167,8 +168,8 @@ public class GameController {
             animation.setRate(game.getSpeed() + tempCoin.getSpeedBonus());
         } else if (coin.getClass().equals(SilverCoin.class)){
             Random rnd = new Random();
-            obstacle.newObstacles(snek, coin, rnd.nextInt(game.getWidth() * game.getHeight()/ 20) +3);
-            game.decMaxScore(obstacle.getObstacles().size());
+            int added = obstacle.newObstacles(snek, coin, rnd.nextInt(game.getWidth() * game.getHeight()/ 20) +3);
+            game.decMaxScore(added);
         } else if (coin.getClass().equals(BlueCoin.class)) {
             snek.ignoreBorders(true);
         }
@@ -176,22 +177,13 @@ public class GameController {
     }
 
     private void newCoin() {
-        if (game.isPowerUp()) {
-            Random rnd = new Random();
-            int ran = rnd.nextInt(12);
-            if (ran == 1) {
-                coin = new GoldCoin(game.getWidth(), game.getHeight(), snek, obstacle);
-            } else if (ran == 1) {
-                coin = new RainbowCoin(game.getWidth(), game.getHeight(), snek, obstacle);
-            } else if (ran == 3) {
-                coin = new BlueCoin(game.getWidth(), game.getHeight(), snek, obstacle);
-            } else if (ran == 4 && obstacle.getObstacles().size() == 0) {
-                coin = new SilverCoin(game.getWidth(), game.getHeight(), snek, obstacle);
-            } else {
-                coin = new Coin(game.getWidth(), game.getHeight(), snek, obstacle);
-            }
-        } else {
-            coin = new Coin(game.getWidth(), game.getHeight(), snek, obstacle);
-        }
+        CoinType type = CoinType.fromRoll(new Random().nextInt(12), game.isPowerUp(), !obstacle.getObstacles().isEmpty());
+        coin = switch (type) {
+            case GOLD -> new GoldCoin(game.getWidth(), game.getHeight(), snek, obstacle);
+            case RAINBOW -> new RainbowCoin(game.getWidth(), game.getHeight(), snek, obstacle);
+            case BLUE -> new BlueCoin(game.getWidth(), game.getHeight(), snek, obstacle);
+            case SILVER -> new SilverCoin(game.getWidth(), game.getHeight(), snek, obstacle);
+            case NORMAL -> new Coin(game.getWidth(), game.getHeight(), snek, obstacle);
+        };
     }
 }

@@ -18,14 +18,10 @@ public class Snake {
     private boolean ignoreBorders = false;
     private boolean noBorder;
     private Obstacle obstacle;
-    private Image imgInputHead = new Image("resources/views/res/snakehead.png");
-    private ImageView imageHead = new ImageView(imgInputHead);
-    private Image imgInputBody = new Image("resources/views/res/snakebody.png");
-    private ImageView imageBody = new ImageView(imgInputBody);
-    private Image imgInputTurn = new Image("resources/views/res/snaketurnleft.png");
-    private ImageView imageTurn = new ImageView(imgInputTurn);
-    private Image imgInputTail = new Image("resources/views/res/snaketail.png");
-    private ImageView imageTail = new ImageView(imgInputTail);
+    private ImageView imageHead;
+    private ImageView imageBody;
+    private ImageView imageTurn;
+    private ImageView imageTail;
     private int snakeDir = 270;
 
     public Snake(int x, int y, boolean noBorder, Obstacle obstacle) {
@@ -140,14 +136,17 @@ public class Snake {
     }
 
     public ImageView getImageViewHead() {
+        if (imageHead == null) imageHead = new ImageView(new Image("resources/views/res/snakehead.png"));
         return imageHead;
     }
 
     public ImageView getImageViewBody() {
+        if (imageBody == null) imageBody = new ImageView(new Image("resources/views/res/snakebody.png"));
         return imageBody;
     }
 
     public ImageView getImageViewTurn() {
+        if (imageTurn == null) imageTurn = new ImageView(new Image("resources/views/res/snaketurnleft.png"));
         return imageTurn;
     }
 
@@ -156,6 +155,7 @@ public class Snake {
     }
 
     public ImageView getImageViewTail() {
+        if (imageTail == null) imageTail = new ImageView(new Image("resources/views/res/snaketail.png"));
         return imageTail;
     }
 }

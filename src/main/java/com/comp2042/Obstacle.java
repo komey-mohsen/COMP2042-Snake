@@ -5,6 +5,8 @@ import javafx.scene.paint.Color;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Collections;
+import java.util.List;
 
 public class Obstacle {
     private Color color = Color.BLACK;
@@ -17,18 +19,18 @@ public class Obstacle {
        this.y = y;
     }
 
-    public void newObstacles(Snake snek, Coin coin, int amount) {
-        if (obstacles.size() > 50) {
-            return;
-        }
-        Random rnd = new Random();
-        Point p;
-        for (int i=0; i<amount; i++) {
-            do {
-                p = new Point(rnd.nextInt(x) + 1, rnd.nextInt(y));
-            } while (coin.getPos().equals(p) || snek.getBody().contains(p) || snek.getHead().equals(p));
-            obstacles.add(p);
-        }
+    /** Places distinct in-bounds obstacles and returns the number actually added. */
+    public int newObstacles(Snake snek, Coin coin, int amount) {
+        if (amount < 0) throw new IllegalArgumentException("Obstacle amount cannot be negative");
+        List<Point> occupied = new ArrayList<>(snek.getBody());
+        occupied.add(snek.getHead());
+        occupied.add(coin.getPos());
+        occupied.addAll(obstacles);
+        List<Point> free = BoardCells.freeCells(x, y, occupied);
+        Collections.shuffle(free, new Random());
+        int added = Math.min(amount, Math.min(free.size(), Math.max(0, 50 - obstacles.size())));
+        obstacles.addAll(free.subList(0, added));
+        return added;
     }
 
     public Color getColor() {
@@ -36,7 +38,9 @@ public class Obstacle {
     }
 
     public ArrayList<Point> getObstacles() {
-        return obstacles;
+        ArrayList<Point> copy = new ArrayList<>();
+        for (Point point : obstacles) copy.add(new Point(point));
+        return copy;
     }
 
     public void reset() {
