@@ -8,6 +8,18 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Headless checks of existing configuration, scoring and restart behaviour. */
 class GameTest {
+    @Test
+    void rejectsUnsupportedBoardSizesAndOverflow() {
+        assertThrows(IllegalArgumentException.class, () -> new Game(2, 20, true, 'N'));
+        assertThrows(IllegalArgumentException.class, () -> new Game(20, 0, true, 'N'));
+        assertThrows(IllegalArgumentException.class, () -> new Game(Integer.MAX_VALUE, 20, true, 'N'));
+    }
+
+    @Test
+    void rejectsUnknownDifficultyRatherThanCreatingAStationaryGame() {
+        assertThrows(IllegalArgumentException.class, () -> new Game(20, 20, true, '?'));
+    }
+
     @ParameterizedTest
     @CsvSource({"E,8.5,true", "N,8.5,false", "H,13.0,false"})
     void difficultyControlsSpeedAndBorders(char difficulty, double speed, boolean wraps) {

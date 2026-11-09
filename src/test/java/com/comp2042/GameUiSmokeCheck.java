@@ -1,6 +1,9 @@
 package com.comp2042;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.awt.Point;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,6 +21,31 @@ import javafx.stage.Window;
 
 /** Optional desktop integration check; excluded from normal headless JUnit execution. */
 public class GameUiSmokeCheck {
+    static class CountingSnake extends Snake {
+        int snapshots;
+        CountingSnake(Obstacle obstacles) { super(20, 20, false, obstacles); }
+        @Override public ArrayList<Point> getBody() { snapshots++; return super.getBody(); }
+    }
+
+    static void checkRendering(GameView view) throws Exception {
+        Obstacle obstacles = new Obstacle(20, 20);
+        CountingSnake snake = new CountingSnake(obstacles);
+        for (int i = 0; i < 9; i++) {
+            Point next = snake.getHead(); next.translate(-1, 0); snake.move('L', next);
+        }
+        Point turn = snake.getHead(); turn.translate(0, 1); snake.move('D', turn);
+        view.drawGrid(null, snake, obstacles);
+        check(snake.snapshots == 1, "Rendering must obtain exactly one body snapshot per frame");
+        Map<?, ?> cache = (Map<?, ?>) field(view, "spriteImages");
+        check(cache.size() == 4, "Sprite cache should contain only the four original images");
+        Map<?, ?> originalImages = new HashMap<>(cache);
+        for (int i = 0; i < 20; i++) view.drawGrid(null, snake, obstacles);
+        check(snake.snapshots == 21, "Body copying must remain once per frame as the snake grows");
+        check(originalImages.equals(cache), "Redrawing should reuse existing sprite images");
+        check(view.gc.getTransform().getMxx() == 1 && view.gc.getTransform().getMyy() == 1
+                && view.gc.getTransform().getTx() == 0 && view.gc.getTransform().getTy() == 0,
+                "Sprite rotations must not leak into the next drawing operation");
+    }
     static void check(boolean value, String message) { if (!value) throw new AssertionError(message); }
     static Object field(Object object, String name) throws Exception {
         Field field = object.getClass().getDeclaredField(name); field.setAccessible(true); return field.get(object);
@@ -52,6 +80,7 @@ public class GameUiSmokeCheck {
         StackPane area = (StackPane) root.getCenter();
         check(view.gridCanvas.getWidth() <= area.getWidth(), "Board is clipped horizontally");
         check(view.gridCanvas.getHeight() <= area.getHeight(), "Board overlaps help footer");
+        checkRendering(view);
         key(scene, KeyCode.UP);
         check(clock.getStatus() == Animation.Status.RUNNING, "Arrow did not start clock");
         key(scene, KeyCode.P);
@@ -78,7 +107,7 @@ public class GameUiSmokeCheck {
         Timeline secondClock = (Timeline) field(second, "animation");
         secondStage.close();
         check(secondClock.getStatus() == Animation.Status.STOPPED, "Closing window left timeline active");
-        System.out.println("PASS: UI construction, help layout, pause/resume, viewport scaling, menu cleanup, session isolation and window-close cleanup");
+        System.out.println("PASS: cached rendering, one body snapshot per frame, UI layout, pause/resume, viewport scaling and session cleanup");
     }
     public static void main(String[] args) throws Exception {
         Platform.startup(() -> Platform.setImplicitExit(false));

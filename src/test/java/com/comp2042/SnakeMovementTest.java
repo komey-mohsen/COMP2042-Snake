@@ -9,6 +9,24 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SnakeMovementTest {
+    @Test
+    void callersCannotChangeCollisionStateByEditingABodySnapshot() {
+        Snake snake = new Snake(6, 6, false, obstaclesAt());
+        snake.move('L', new Point(2, 3));
+        var snapshot = snake.getBody();
+        for (Point point : snapshot) point.setLocation(0, 0);
+        snapshot.clear();
+        assertEquals(List.of(new Point(4, 3), new Point(3, 3)), snake.getBody());
+        snake.move('R', null);
+        assertTrue(snake.getDead(), "Changing a snapshot must not remove the neck collision");
+    }
+
+    @Test
+    void rejectsBoardsThatCannotHoldTheInitialSnake() {
+        assertThrows(IllegalArgumentException.class, () -> new Snake(2, 20, false, new Obstacle(2, 20)));
+        assertThrows(IllegalArgumentException.class, () -> new Snake(3, 0, false, new Obstacle(3, 0)));
+    }
+
     private Obstacle obstaclesAt(Point... points) {
         return new Obstacle(6, 6) {
             @Override public ArrayList<Point> getObstacles() {

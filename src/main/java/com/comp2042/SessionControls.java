@@ -25,7 +25,7 @@ public final class SessionControls implements AutoCloseable {
             state = State.RUNNING;
             startClock.run();
         }
-        if (turnPending || !direction.canTurnTo(requested)) return false;
+        if (requested == direction || turnPending || !direction.canTurnTo(requested)) return false;
         previousDirection = direction;
         direction = requested;
         turnPending = true;

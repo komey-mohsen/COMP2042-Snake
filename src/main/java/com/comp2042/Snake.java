@@ -1,7 +1,5 @@
 package com.comp2042;
 
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 
 import java.awt.*;
@@ -18,13 +16,10 @@ public class Snake {
     private boolean ignoreBorders = false;
     private boolean noBorder;
     private Obstacle obstacle;
-    private ImageView imageHead;
-    private ImageView imageBody;
-    private ImageView imageTurn;
-    private ImageView imageTail;
     private int snakeDir = 270;
 
     public Snake(int x, int y, boolean noBorder, Obstacle obstacle) {
+        BoardCells.validateGameSize(x, y);
         this.obstacle = obstacle;
         this.noBorder = noBorder;
         this.head.setLocation(x / 2, y / 2);
@@ -71,22 +66,14 @@ public class Snake {
         return grows;
     }
 
-    public int getBodyDir(int bodyCount) {
-        if (bodyCount == 0) {
-            return 0;
-        } else if (body.get(bodyCount).getY() == body.get(bodyCount - 1).getY()) {
-            return 270;
-        } else {
-            return 0;
-        }
-    }
-
     public boolean hitSelf() {
         return body.contains(head);
     }
 
     public ArrayList<Point> getBody() {
-        return new ArrayList<>(body);
+        ArrayList<Point> snapshot = new ArrayList<>(body.size());
+        for (Point point : body) snapshot.add(new Point(point));
+        return snapshot;
     }
 
     public Point getHead() {
@@ -109,27 +96,8 @@ public class Snake {
         ignoreBorders = ign;
     }
 
-    public ImageView getImageViewHead() {
-        if (imageHead == null) imageHead = new ImageView(new Image("resources/views/res/snakehead.png"));
-        return imageHead;
-    }
-
-    public ImageView getImageViewBody() {
-        if (imageBody == null) imageBody = new ImageView(new Image("resources/views/res/snakebody.png"));
-        return imageBody;
-    }
-
-    public ImageView getImageViewTurn() {
-        if (imageTurn == null) imageTurn = new ImageView(new Image("resources/views/res/snaketurnleft.png"));
-        return imageTurn;
-    }
-
     public int getSnakeDir() {
         return snakeDir;
     }
 
-    public ImageView getImageViewTail() {
-        if (imageTail == null) imageTail = new ImageView(new Image("resources/views/res/snaketail.png"));
-        return imageTail;
-    }
 }

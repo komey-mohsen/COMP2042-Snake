@@ -15,6 +15,7 @@ public class Game {
     private boolean noBorder;
 
     public Game(int x, int y, boolean powerUp, char difficulty) {
+        int cells = BoardCells.validateGameSize(x, y);
         if (difficulty == 'E') {
             speed = 8.5;
             noBorder = true;
@@ -24,12 +25,13 @@ public class Game {
         } else if (difficulty == 'H') {
             speed = 13;
             noBorder = false;
+        } else {
+            throw new IllegalArgumentException("Difficulty must be E, N or H");
         }
         this.powerUp = powerUp;
         width = x;
         height = y;
-        maxScore = x * y - 2;
-        this.powerUp = powerUp;
+        maxScore = cells - 2;
         if (height > 50) {
             multiplier = 10;
         } else {

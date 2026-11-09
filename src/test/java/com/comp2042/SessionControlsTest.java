@@ -6,6 +6,17 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SessionControlsTest {
     @Test
+    void repeatingTheCurrentDirectionDoesNotConsumeTheAvailableTurn() {
+        SessionControls session = new SessionControls(() -> {}, () -> {});
+        session.requestDirection(Direction.LEFT);
+        assertEquals(SessionControls.State.RUNNING, session.getState());
+        assertTrue(session.requestDirection(Direction.UP), "Holding Left must not block the next turn");
+        session.tickCompleted();
+        session.requestDirection(Direction.UP);
+        assertTrue(session.requestDirection(Direction.RIGHT), "Key repeat must not consume a turn");
+    }
+
+    @Test
     void closingStopsTheClockAndLateInputsCannotRestartIt() {
         AtomicInteger starts = new AtomicInteger();
         AtomicInteger stops = new AtomicInteger();

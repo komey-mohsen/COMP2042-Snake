@@ -95,7 +95,7 @@ public class MainMenuController {
 
         gameScene.setOnKeyPressed(controller::handle);
 
-        gameView.makeScene(gameScene, snek, coin);
+        gameView.makeScene(snek, coin);
         gamePane.setMinSize(0, 0);
         gamePane.widthProperty().addListener((observable, before, after) ->
                 controller.resizeBoard(gamePane.getWidth(), gamePane.getHeight()));

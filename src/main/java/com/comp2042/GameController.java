@@ -5,12 +5,9 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import java.io.File;
 import java.util.Random;
 
 public class GameController {
@@ -19,17 +16,9 @@ public class GameController {
     private GameView gameView;
     private Game game;
     private Stage stage;
-    private String coinSoundPath = "resources/views/res/coinSound.wav";
     private Obstacle obstacle;
 
     private final SessionControls controls;
-
-    private int legacyScoreMultiplier = 2;
-
-    private void calculateBonusScore() {
-        int bonus = game.getScorePoints() * legacyScoreMultiplier;
-        System.out.println("Bonus score: " + bonus);
-    }
 
     public GameController(Snake snek, Coin coin, Game game, GameView gameView, Obstacle obstacle, Stage stage) {
         this.snek = snek;
@@ -63,7 +52,7 @@ public class GameController {
                     coin = null;
                     gameView.gameWon();
                     gameView.updateScoreLabel();
-                    gameView.drawGrid(coin, snek, obstacle, gameView.gc, false, 0);
+                    gameView.drawGrid(coin, snek, obstacle);
                     return;
                 }
                 newCoin();
@@ -74,7 +63,7 @@ public class GameController {
             gameView.showSessionState(controls.getState());
 
             if (!snek.getDead() || snek.hitSelf()) {
-                gameView.drawGrid(coin, snek, obstacle, gameView.gc, false, 0);
+                gameView.drawGrid(coin, snek, obstacle);
             }
 
             gameView.gameWon();
@@ -87,9 +76,7 @@ public class GameController {
         if (controls.getState() == SessionControls.State.CLOSED) return;
         boolean finished = snek.getDead() || game.gameWon();
         if (!finished && event.getCode().isArrowKey()) {
-            if (controls.requestDirection(Direction.valueOf(event.getCode().name()))) {
-                gameView.turnDir(snek, controls.getPreviousDirection(), controls.getDirection());
-            }
+            controls.requestDirection(Direction.valueOf(event.getCode().name()));
             gameView.showSessionState(controls.getState());
         }
 
@@ -130,7 +117,6 @@ public class GameController {
         coin = new Coin(game.getWidth(), game.getHeight(), snek, obstacle);
 
         animation.setRate(game.getSpeed());
-        gameView.resetTurns();
 
         gameView.gameWon();
         gameView.gameOver(snek);
@@ -138,7 +124,7 @@ public class GameController {
         gameView.updateEffects(null, obstacle);
         gameView.showSessionState(controls.getState());
 
-        gameView.drawGrid(coin, snek, obstacle, gameView.gc, false, 0);
+        gameView.drawGrid(coin, snek, obstacle);
     }
 
     /** Pauses only this window's round. */
