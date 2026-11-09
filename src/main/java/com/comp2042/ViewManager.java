@@ -26,7 +26,7 @@ public class ViewManager {
             loader.setLocation(Main.class.getResource("/resources/views/MainMenu.fxml"));
             root = loader.load();
         } catch (IOException exception) {
-            exception.printStackTrace();
+            throw new IllegalStateException("Unable to load the Snake main menu", exception);
         }
 
         Scene mainScene = new Scene(root);

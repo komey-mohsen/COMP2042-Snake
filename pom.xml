@@ -16,7 +16,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javafx.version>25.0.1</javafx.version>
         <junit.version>5.11.4</junit.version>
-        <!-- Main class (package "resources" matches the original project layout) -->
+        <!-- Existing application entry point. -->
         <mainClass>com.comp2042.Main</mainClass>
     </properties>
 
