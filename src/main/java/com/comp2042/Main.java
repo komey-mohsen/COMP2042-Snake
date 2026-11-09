@@ -6,10 +6,15 @@ import javafx.stage.Stage;
 public class Main extends Application {
 
     private static ViewManager viewManager;
+    private final HighScoreStore highScores;
+
+    public Main() { this(HighScoreStore.local()); }
+
+    Main(HighScoreStore highScores) { this.highScores = highScores; }
 
     @Override
     public void start(Stage primaryStage) {
-        viewManager = new ViewManager();
+        viewManager = new ViewManager(highScores);
         viewManager.initalizeMainMenu();
     }
 

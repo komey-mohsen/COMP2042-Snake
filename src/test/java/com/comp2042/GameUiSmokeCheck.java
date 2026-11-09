@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.awt.Point;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -71,12 +72,72 @@ public class GameUiSmokeCheck {
     }
 
     static GameController round(Game game) throws Exception {
+        return round(game, new HighScoreStore(java.nio.file.Files.createTempDirectory("snake-ui-scores-").resolve("scores.properties")));
+    }
+
+    static GameController round(Game game, HighScoreStore scores) throws Exception {
         Obstacle obstacles = new Obstacle(game.getWidth(), game.getHeight());
         Snake snake = new Snake(game.getWidth(), game.getHeight(), game.isNoBorder(), obstacles);
         Coin coin = new Coin(game.getWidth(), game.getHeight(), snake, obstacles);
         GameView view = new GameView(game);
         view.makeScene(snake, coin);
-        return new GameController(snake, coin, game, view, obstacles, new Stage());
+        return new GameController(snake, coin, game, view, obstacles, new Stage(), scores);
+    }
+
+    static void checkComboAndScoreLifecycle() throws Exception {
+        AtomicLong time = new AtomicLong();
+        Game game = new Game(5, 2, true, 'N', new ComboScoring(time::get));
+        var file = java.nio.file.Files.createTempDirectory("snake-ui-persistence-").resolve("scores.properties");
+        HighScoreStore scores = new HighScoreStore(file);
+        GameController controller = round(game, scores);
+        GameView view = (GameView) field(controller, "gameView");
+        Scene scene = new Scene(new StackPane(view.gridCanvas)); scene.setOnKeyPressed(controller::handle);
+        try {
+            Snake snake = (Snake) field(controller, "snek"); Obstacle obstacles = (Obstacle) field(controller, "obstacle");
+            setCoin(controller, new Coin(5, 2, snake, obstacles), new Point(1, 1));
+            key(scene, KeyCode.LEFT); tick(controller);
+            time.addAndGet(java.time.Duration.ofSeconds(2).toNanos());
+            setCoin(controller, new GoldCoin(5, 2, snake, obstacles), new Point(0, 1)); tick(controller);
+            check(game.getScorePoints() == 35 && view.comboLabel.getText().contains("×2"), "Combo award/HUD is incorrect");
+            controller.pause();
+            time.addAndGet(java.time.Duration.ofMinutes(1).toNanos());
+            check(game.getCombo().remaining().equals(java.time.Duration.ofSeconds(5)), "Pause consumed combo time");
+            check(((Timeline) field(controller, "hud")).getStatus() == Animation.Status.STOPPED, "Paused HUD clock kept running");
+            key(scene, KeyCode.UP); time.addAndGet(java.time.Duration.ofSeconds(1).toNanos());
+            setCoin(controller, new Coin(5, 2, snake, obstacles), new Point(0, 0)); tick(controller);
+            check(game.getScorePoints() == 50, "Resumed combo did not award x3");
+            time.addAndGet(java.time.Duration.ofSeconds(5).toNanos());
+            var refresh = GameController.class.getDeclaredMethod("refreshHud"); refresh.setAccessible(true); refresh.invoke(controller);
+            check(view.comboLabel.getText().contains("×1"), "Combo HUD did not expire");
+            controller.restart(); controller.close(); controller.close();
+            var saved = new HighScoreStore(file).snapshot(game.getScoreMode()).entries();
+            check(saved.size() == 1 && saved.get(0).points() == 50 && saved.get(0).bestCombo() == 3,
+                    "Restart/close lost or duplicated the completed round");
+        } finally { controller.close(); }
+    }
+
+    static void checkHighScoreMenu(ViewManager views) {
+        var root = views.getPrimaryStage().getScene().getRoot();
+        root.applyCss(); root.layout();
+        for (var node : root.lookup("#mainContent").lookupAll(".button")) {
+            check(node.localToScene(node.getBoundsInLocal()).getMaxY() <= views.getPrimaryStage().getScene().getHeight(),
+                    "Main menu button is clipped after adding High Scores");
+        }
+        ((Button) root.lookupAll(".button").stream().filter(n -> n instanceof Button b && b.getText().equals("High Scores"))
+                .findFirst().orElseThrow()).fire();
+        var scoresPane = (javafx.scene.layout.VBox) root.lookup("#scoresContent");
+        var table = (javafx.scene.control.TableView<?>) root.lookup("#highScoresTable");
+        check(scoresPane.isVisible() && table.getItems().size() == 1, "High Scores page did not open with the current mode");
+        check(((HighScoreEntry) table.getItems().get(0)).points() == 100, "Wrong leaderboard mode");
+        @SuppressWarnings("unchecked") var difficulty = (javafx.scene.control.ComboBox<String>) root.lookup("#scoreDifficultyChoice");
+        difficulty.setValue("Easy");
+        ((javafx.scene.control.CheckBox) root.lookup("#scorePowerUpsChoice")).fire();
+        check(table.getItems().size() == 1 && ((HighScoreEntry) table.getItems().get(0)).points() == 200, "Leaderboard filters did not refresh");
+        difficulty.setValue("Hard");
+        check(table.getItems().isEmpty(), "An empty leaderboard retained another difficulty's scores");
+        ((Button) scoresPane.lookupAll(".button").stream().filter(n -> n instanceof Button b && b.getText().equals("Back"))
+                .findFirst().orElseThrow()).fire();
+        check(root.lookup("#mainContent").isVisible(), "High Scores back did not return to the menu");
     }
 
     static void checkRoundCompletion() throws Exception {
@@ -135,8 +196,13 @@ public class GameUiSmokeCheck {
     static void runChecks() throws Exception {
         checkRoundCompletion();
         checkPowerUpExpiryAndSmallBoardSilver();
-        new Main().start(new Stage());
+        checkComboAndScoreLifecycle();
+        HighScoreStore menuScores = new HighScoreStore(java.nio.file.Files.createTempDirectory("snake-menu-scores-").resolve("scores.properties"));
+        menuScores.record(new ScoreMode('N', true, 20, 20), 100, 2);
+        menuScores.record(new ScoreMode('E', false, 20, 20), 200, 4);
+        new Main(menuScores).start(new Stage());
         ViewManager views = Main.getViewManager();
+        checkHighScoreMenu(views);
         play(views);
         Stage gameStage = views.getGameStage();
         Scene scene = gameStage.getScene();
@@ -176,7 +242,8 @@ public class GameUiSmokeCheck {
         Timeline secondClock = (Timeline) field(second, "animation");
         secondStage.close();
         check(secondClock.getStatus() == Animation.Status.STOPPED, "Closing window left timeline active");
-        System.out.println("PASS: final-coin completion, power-up expiry, small-board silver, keypad input, cached rendering, layout and session cleanup");
+        check(((Timeline) field(second, "hud")).getStatus() == Animation.Status.STOPPED, "Closed HUD clock kept running");
+        System.out.println("PASS: combo timing/pause/HUD, saved round deduplication, leaderboard filters, gameplay, rendering and cleanup");
     }
     public static void main(String[] args) throws Exception {
         Platform.startup(() -> Platform.setImplicitExit(false));

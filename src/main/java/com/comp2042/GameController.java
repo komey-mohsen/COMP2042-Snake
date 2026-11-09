@@ -19,8 +19,16 @@ public class GameController {
     private Obstacle obstacle;
 
     private final SessionControls controls;
+    private final HighScoreStore highScores;
+    private boolean roundRecorded;
+    private int bestAtStart;
 
     public GameController(Snake snek, Coin coin, Game game, GameView gameView, Obstacle obstacle, Stage stage) {
+        this(snek, coin, game, gameView, obstacle, stage, HighScoreStore.local());
+    }
+
+    public GameController(Snake snek, Coin coin, Game game, GameView gameView, Obstacle obstacle, Stage stage,
+            HighScoreStore highScores) {
         this.snek = snek;
         this.coin = coin;
         this.gameView = gameView;
@@ -28,17 +36,55 @@ public class GameController {
         this.stage = stage;
 
         this.obstacle = obstacle;
-        controls = new SessionControls(animation::play, animation::stop);
+        this.highScores = highScores;
+        controls = new SessionControls(this::startClock, this::stopClock);
         animation.setCycleCount(Animation.INDEFINITE);
         animation.setRate(game.getSpeed());
+        hud.setCycleCount(Animation.INDEFINITE);
+        loadBest();
     }
 
     private final Timeline animation = new Timeline(new KeyFrame(Duration.seconds(1), event -> tick()));
+    private final Timeline hud = new Timeline(new KeyFrame(Duration.millis(100), event -> refreshHud()));
+
+    private void startClock() {
+        game.getCombo().resume();
+        animation.play();
+        hud.play();
+    }
+
+    private void stopClock() {
+        animation.stop();
+        hud.stop();
+        game.getCombo().pause();
+    }
+
+    private void loadBest() {
+        var snapshot = highScores.snapshot(game.getScoreMode());
+        bestAtStart = snapshot.entries().isEmpty() ? 0 : snapshot.entries().get(0).points();
+        gameView.updateBestScore(bestAtStart, false);
+        if (snapshot.pending() || !snapshot.storageAvailable()) gameView.showScoreSave(false);
+    }
+
+    private void refreshHud() {
+        gameView.showSessionState(controls.getState());
+        gameView.updateScoreLabel();
+        gameView.updateBestScore(Math.max(bestAtStart, game.getScorePoints()), game.getScorePoints() > bestAtStart);
+    }
+
+    /** Saves once per round; storage failures stay pending in the shared store and never end gameplay. */
+    private void recordRound() {
+        if (roundRecorded || game.getScorePoints() == 0) return;
+        boolean saved = highScores.record(game.getScoreMode(), game.getScorePoints(), game.getCombo().bestMultiplier());
+        roundRecorded = true;
+        gameView.showScoreSave(saved);
+    }
 
     private void tick() {
         if (controls.getState() != SessionControls.State.RUNNING) return;
         if (snek.getDead() || game.gameWon()) {
             controls.finish();
+            recordRound();
             return;
         } else {
 
@@ -48,10 +94,11 @@ public class GameController {
                 game.incScore();
                 if (game.gameWon()) {
                     controls.finish();
+                    recordRound();
                     gameView.showSessionState(controls.getState());
                     coin = null;
                     gameView.gameWon();
-                    gameView.updateScoreLabel();
+                    refreshHud();
                     gameView.drawGrid(coin, snek, obstacle);
                     return;
                 }
@@ -59,7 +106,7 @@ public class GameController {
             }
 
             controls.tickCompleted();
-            if (snek.getDead()) controls.finish();
+            if (snek.getDead()) { controls.finish(); recordRound(); }
             gameView.showSessionState(controls.getState());
 
             if (!snek.getDead() || snek.hitSelf()) {
@@ -68,7 +115,7 @@ public class GameController {
 
             gameView.gameWon();
             gameView.gameOver(snek);
-            gameView.updateScoreLabel();
+            refreshHud();
         }
     }
 
@@ -78,7 +125,7 @@ public class GameController {
         Direction requested = GameKeys.directionFor(event.getCode());
         if (!finished && requested != null) {
             controls.requestDirection(requested);
-            gameView.showSessionState(controls.getState());
+            refreshHud();
         }
 
         if (event.getCode().equals(KeyCode.P)) {
@@ -110,10 +157,14 @@ public class GameController {
     public void restart() {
         if (controls.getState() == SessionControls.State.CLOSED) return;
         controls.reset();
+        recordRound();
         animation.jumpTo(Duration.ZERO);
 
         obstacle.reset();
         game.resetScore();
+        roundRecorded = false;
+        gameView.clearScoreSave();
+        loadBest();
         snek = new Snake(game.getWidth(), game.getHeight(), game.isNoBorder(), obstacle);
         coin = new Coin(game.getWidth(), game.getHeight(), snek, obstacle);
 
@@ -121,7 +172,7 @@ public class GameController {
 
         gameView.gameWon();
         gameView.gameOver(snek);
-        gameView.updateScoreLabel();
+        refreshHud();
         gameView.updateEffects(null, obstacle);
         gameView.showSessionState(controls.getState());
 
@@ -131,11 +182,14 @@ public class GameController {
     /** Pauses only this window's round. */
     public void pause() {
         controls.pause();
-        gameView.showSessionState(controls.getState());
+        refreshHud();
     }
 
     /** Stops a session when its window is closed or hidden. */
-    public void close() { controls.close(); }
+    public void close() {
+        controls.close();
+        recordRound();
+    }
 
     public void resizeBoard(double width, double height) {
         if (controls.getState() != SessionControls.State.CLOSED) {
@@ -161,7 +215,7 @@ public class GameController {
         } else if (coin.getClass().equals(BlueCoin.class)) {
             snek.ignoreBorders(true);
         }
-        game.addPoints(coin.getPoints());
+        game.awardCoin(coin.getPoints());
         gameView.updateEffects(coin, obstacle);
     }
 

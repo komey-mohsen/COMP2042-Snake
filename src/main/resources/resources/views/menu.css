@@ -37,3 +37,11 @@
 .combo-box-popup .list-cell { -fx-background-color: #34223f; }
 .combo-box-popup .list-cell:hover, .combo-box-popup .list-cell:selected { -fx-background-color: #80374f; }
 .combo-box .arrow { -fx-background-color: #ff7182; }
+.scores-table { -fx-background-color: #34223f; -fx-border-color: #80516c; }
+.scores-table .column-header-background, .scores-table .column-header { -fx-background-color: #49304f; }
+.scores-table .column-header .label { -fx-text-fill: #fff0f4; }
+.scores-table .table-row-cell { -fx-background-color: #34223f; }
+.scores-table .table-row-cell:odd { -fx-background-color: #402943; }
+.scores-table .table-cell { -fx-text-fill: #fff0f4; -fx-border-color: transparent; -fx-padding: 8px; }
+.scores-table .table-row-cell:selected { -fx-background-color: #80374f; }
+.scores-table .placeholder .label { -fx-text-fill: #c8a6bb; }

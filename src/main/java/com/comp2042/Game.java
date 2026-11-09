@@ -13,9 +13,17 @@ public class Game {
     private double speed;
     private boolean powerUp;
     private boolean noBorder;
+    private final char difficulty;
+    private final ComboScoring combo;
 
     public Game(int x, int y, boolean powerUp, char difficulty) {
+        this(x, y, powerUp, difficulty, new ComboScoring());
+    }
+
+    Game(int x, int y, boolean powerUp, char difficulty, ComboScoring combo) {
         int cells = BoardCells.validateGameSize(x, y);
+        this.difficulty = difficulty;
+        this.combo = java.util.Objects.requireNonNull(combo);
         if (difficulty == 'E') {
             speed = 8.5;
             noBorder = true;
@@ -64,6 +72,7 @@ public class Game {
         score = 0;
         scorePoints = 0;
         maxScore = width * height - 2;
+        combo.reset();
     }
 
     public Color getColor() {
@@ -81,6 +90,16 @@ public class Game {
     public int getScorePoints() {
         return scorePoints;
     }
+
+    /** Awards multiplied points without changing the number of occupied board cells. */
+    public int awardCoin(int basePoints) {
+        int earned = combo.collect(basePoints);
+        scorePoints = Math.addExact(scorePoints, earned);
+        return earned;
+    }
+
+    public ComboScoring getCombo() { return combo; }
+    public ScoreMode getScoreMode() { return new ScoreMode(difficulty, powerUp, width, height); }
 
     public boolean isPowerUp() {
         return powerUp;
