@@ -149,6 +149,8 @@ public class MainMenuController {
 
         StackPane gamePane = new StackPane();
         BorderPane root = new BorderPane(gamePane);
+        root.setId("gameRoot");
+        root.getStylesheets().add(Main.class.getResource("/resources/views/menu.css").toExternalForm());
         gameScene = new Scene(root, game.getWidth() * game.getMultiplier(), game.getHeight() * game.getMultiplier() + 300);
 
         gameScene.setOnKeyPressed(controller::handle);
@@ -164,11 +166,11 @@ public class MainMenuController {
         gamePane.setAlignment(gameView.gameOverLabel, Pos.TOP_CENTER);
         gamePane.setAlignment(gameView.gameWonLabel, Pos.TOP_CENTER);
         Button restartButton = new Button("Restart");
-        restartButton.setFocusTraversable(false);
+        restartButton.getStyleClass().add("game-button"); restartButton.setFocusTraversable(false);
         restartButton.setTooltip(new Tooltip("Restart (R or Tab). Press an arrow key to begin again."));
         restartButton.setOnAction(event -> controller.restart());
         Button pauseButton = new Button("Pause (P)");
-        pauseButton.setFocusTraversable(false);
+        pauseButton.getStyleClass().add("game-button"); pauseButton.setFocusTraversable(false);
         pauseButton.setOnAction(event -> controller.pause());
         HBox buttons = new HBox(12, gameView.scoreLabel, restartButton, pauseButton);
         buttons.setAlignment(Pos.CENTER);
@@ -192,7 +194,7 @@ public class MainMenuController {
         help.setExpanded(true);
         VBox footer = new VBox(6, buttons, gameView.bestScoreLabel, gameView.comboLabel,
                 gameView.effectLabel, gameView.scoreSaveLabel, help);
-        footer.setAlignment(Pos.CENTER);
+        footer.getStyleClass().add("game-footer"); footer.setAlignment(Pos.CENTER);
         footer.setPadding(new Insets(8));
         root.setBottom(footer);
     }

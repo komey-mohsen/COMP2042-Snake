@@ -53,7 +53,7 @@ public class GameView {
 
         gameOverLabel = new Label("GAME OVER");
         gameOverLabel.setId("gameOverLabel");
-        String css = "resources/views/styling.css";
+        String css = "resources/views/menu.css";
         gameOverLabel.getStylesheets().add(css);
         gameOverLabel.setVisible(false);
 
@@ -65,26 +65,25 @@ public class GameView {
         scoreLabel = new Label("Score: " + game.getScorePoints());
         scoreLabel.setId("scoreLabel");
         scoreLabel.getStylesheets().add(css);
-        scoreLabel.setFont(new Font("Arial", 20));
+        scoreLabel.setFont(new Font("Segoe UI", 20));
         scoreLabel.setVisible(true);
 
         statusLabel = new Label();
         statusLabel.setWrapText(true);
-        statusLabel.setStyle("-fx-background-color: rgba(254,255,228,0.94); -fx-text-fill: #243629; "
-                + "-fx-font-size: 18px; -fx-padding: 12px; -fx-text-alignment: center;");
+        statusLabel.getStyleClass().add("session-overlay");
         statusLabel.setMouseTransparent(true);
         showSessionState(SessionControls.State.READY);
         effectLabel = new Label(game.isPowerUp() ? "No temporary power-up" : "Power-ups disabled");
         effectLabel.setWrapText(true);
-        effectLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #38543d;");
+        effectLabel.getStyleClass().add("game-caption");
         comboLabel = new Label();
         comboLabel.setWrapText(true);
-        comboLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #8a3e15; -fx-font-weight: bold;");
+        comboLabel.getStyleClass().add("game-caption");
         bestScoreLabel = new Label();
-        bestScoreLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #38543d;");
+        bestScoreLabel.getStyleClass().add("game-caption");
         scoreSaveLabel = new Label();
         scoreSaveLabel.setWrapText(true);
-        scoreSaveLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #8a3e15;");
+        scoreSaveLabel.getStyleClass().add("game-caption");
         if (scoreSaved == null) clearScoreSave();
         else showScoreSave(scoreSaved);
         updateBestScore(displayedBest, false);
@@ -106,18 +105,30 @@ public class GameView {
         gridCanvas.setWidth(boardLayout.width());
         gridCanvas.setHeight(boardLayout.height());
         double fullScale = boardLayout.cellSize() / baseLayout.cellSize();
-        gameOverLabel.setFont(new Font("Arial", 25 * fullScale));
-        gameWonLabel.setFont(new Font("Arial", 25 * fullScale));
+        gameOverLabel.setFont(new Font("Segoe UI", 25 * fullScale));
+        gameWonLabel.setFont(new Font("Segoe UI", 25 * fullScale));
         drawGrid(coin, snek, obstacle);
     }
 
     public void drawGrid(Coin coin, Snake snek, Obstacle obstacle) {
-        gc.setFill(game.getColor());
+        gc.setFill(new javafx.scene.paint.LinearGradient(0.1, 0, 0.85, 1, true, javafx.scene.paint.CycleMethod.NO_CYCLE, new javafx.scene.paint.Stop(0, javafx.scene.paint.Color.web("#201b40")), new javafx.scene.paint.Stop(0.53, javafx.scene.paint.Color.web("#281631")), new javafx.scene.paint.Stop(1, javafx.scene.paint.Color.web("#57192f"))));
         gc.fillRect(0, 0, gridCanvas.getWidth(), gridCanvas.getHeight());
 
+        // Draw cell boundaries beneath the snake and coins.
+        gc.setStroke(javafx.scene.paint.Color.web("#80374f", 0.65));
+        gc.setLineWidth(1);
+        double cellSize = boardLayout.cellSize();
+        for (int x = 0; x <= game.getWidth(); x++) {
+            double line = Math.min(gridCanvas.getWidth() - 0.5, x * cellSize + 0.5);
+            gc.strokeLine(line, 0, line, gridCanvas.getHeight());
+        }
+        for (int y = 0; y <= game.getHeight(); y++) {
+            double line = Math.min(gridCanvas.getHeight() - 0.5, y * cellSize + 0.5);
+            gc.strokeLine(0, line, gridCanvas.getWidth(), line);
+        }
         if (coin != null) {
             BoardLayout.Cell cell = boardLayout.bounds(coin.getPos());
-            gc.drawImage(coin.getImage(), cell.x(), cell.y(), cell.size() * 0.85, cell.size() * 0.85);
+            gc.drawImage(coin.getImage(), cell.x() + cell.size() * 0.075, cell.y() + cell.size() * 0.075, cell.size() * 0.85, cell.size() * 0.85);
         }
 
         for (SnakeSprites.Part part : SnakeSprites.layout(snek.getBody(), snek.getHead(),
@@ -126,7 +137,7 @@ public class GameView {
         }
 
         if (obstacle != null) {
-            gc.setFill(obstacle.getColor());
+            gc.setFill(javafx.scene.paint.Color.web("#b05b78"));
             for (Point point : obstacle.getObstacles()) {
                 BoardLayout.Cell cell = boardLayout.bounds(point);
                 gc.fillRect(cell.x(), cell.y(), cell.size(), cell.size());

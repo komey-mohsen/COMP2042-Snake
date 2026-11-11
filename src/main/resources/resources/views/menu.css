@@ -1,4 +1,4 @@
-#menuRoot {
+#menuRoot, #gameRoot {
     -fx-background-color: linear-gradient(from 10% 0% to 85% 100%, #201b40 0%, #281631 53%, #57192f 100%);
     -fx-font-family: "Segoe UI";
 }
@@ -45,3 +45,25 @@
 .scores-table .table-cell { -fx-text-fill: #fff0f4; -fx-border-color: transparent; -fx-padding: 8px; }
 .scores-table .table-row-cell:selected { -fx-background-color: #80374f; }
 .scores-table .placeholder .label { -fx-text-fill: #c8a6bb; }
+
+/* Shared menu theme throughout gameplay. */
+#gameRoot .label { -fx-font-family: "Segoe UI"; -fx-text-fill: #fff0f4; }
+.game-footer { -fx-background-color: rgba(32,27,64,0.78); -fx-border-color: #80516c transparent transparent transparent; }
+#gameRoot #scoreLabel { -fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #ff7182; }
+#gameRoot .game-caption { -fx-font-size: 12px; -fx-text-fill: #c8a6bb; }
+.game-button { -fx-background-color: #ff455a; -fx-background-radius: 30px; -fx-text-fill: #fff4f5; -fx-font-size: 13px; -fx-padding: 8px 18px; -fx-cursor: hand; }
+.game-button:hover { -fx-background-color: #ff6172; }
+.game-button:pressed { -fx-background-color: #df304c; }
+.game-button:focused { -fx-border-color: #ffabb5; -fx-border-radius: 30px; }
+.session-overlay, #gameOverLabel, #gameWonLabel {
+    -fx-background-color: rgba(40,22,49,0.96); -fx-background-radius: 16px;
+    -fx-border-color: #b05b78; -fx-border-radius: 16px;
+    -fx-text-fill: #fff0f4; -fx-font-family: "Segoe UI";
+    -fx-font-size: 18px; -fx-padding: 14px 20px; -fx-text-alignment: center;
+}
+#gameOverLabel, #gameWonLabel { -fx-text-fill: #ff7182; -fx-font-weight: bold; }
+#gameRoot .titled-pane { -fx-text-fill: #fff0f4; }
+#gameRoot .titled-pane > .title { -fx-background-color: #49304f; }
+#gameRoot .titled-pane > .title > .arrow-button .arrow { -fx-background-color: #ff7182; }
+#gameRoot .titled-pane > .content { -fx-background-color: #34223f; -fx-border-color: #80516c; }
+#gameRoot .titled-pane .label { -fx-text-fill: #c8a6bb; }
